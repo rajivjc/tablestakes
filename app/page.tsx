@@ -140,8 +140,6 @@ export default function Home() {
           type: "turn",
           scenario,
           strategyId: activeStrategy.id,
-          strategyLabel: activeStrategy.label,
-          strategyPromptFragment: activeStrategy.promptFragment,
           turnNumber: currentTurn,
           totalTurns: TOTAL_TURNS,
           messages: newMessages,

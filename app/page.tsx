@@ -309,13 +309,28 @@ export default function Home() {
                   </button>
                 ))}
               </div>
-              <textarea
-                value={scenario}
-                onChange={(e) => handleScenarioChange(e.target.value)}
-                placeholder="Describe your own scenario..."
-                rows={3}
-                className="w-full bg-surface-raised border border-subtle rounded-lg px-4 py-3 text-sm text-gray-200 placeholder:text-subtle focus:outline-none focus:border-accent/50 resize-none"
-              />
+              <div className="relative">
+                <textarea
+                  value={scenario}
+                  onChange={(e) => handleScenarioChange(e.target.value)}
+                  placeholder="Describe your own scenario..."
+                  rows={3}
+                  className="w-full bg-surface-raised border border-subtle rounded-lg px-4 py-3 pr-8 text-sm text-gray-200 placeholder:text-subtle focus:outline-none focus:border-accent/50 resize-none"
+                />
+                {scenario && (
+                  <button
+                    onClick={() => {
+                      setScenario("");
+                      setSelectedPreset(null);
+                      setIsCustomScenario(false);
+                    }}
+                    className="absolute top-2.5 right-2.5 w-5 h-5 flex items-center justify-center rounded-full bg-subtle/50 text-muted hover:text-gray-200 hover:bg-subtle transition-colors text-xs"
+                    aria-label="Clear scenario"
+                  >
+                    &times;
+                  </button>
+                )}
+              </div>
             </section>
 
             {/* Opponent Strategy */}

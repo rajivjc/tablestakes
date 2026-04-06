@@ -11,7 +11,7 @@ export const STRATEGIES: Strategy[] = [
     label: "Hardball",
     description: "Extreme opening positions, slow concessions, pressure tactics",
     promptFragment: `You negotiate using hardball tactics. Your behavioral rules:
-- Open with an extreme position far beyond what's reasonable. Anchor high (or low, depending on your side).
+- Open with an extreme position far beyond what's reasonable. Anchor in the direction that favors your position as the opposing party.
 - Make concessions very slowly. Every concession you make should be small and come with a demand in return.
 - Use time pressure: imply deadlines, mention other options, suggest the window is closing.
 - Challenge the other party's assumptions directly. Ask "What makes you think that's reasonable?"

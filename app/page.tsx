@@ -3,10 +3,19 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { SCENARIOS } from "@/lib/scenarios";
 import { STRATEGIES, getRandomStrategy } from "@/lib/strategies";
+import {
+  saveSession,
+  isStorageAvailable,
+  getSessions,
+  type SessionResult,
+  type LanguageFlag,
+  type Annotation,
+} from "@/lib/storage";
 import MomentumMeter from "@/components/MomentumMeter";
 import ChatBubble, { TypingIndicator } from "@/components/ChatBubble";
 import ScoreDial from "@/components/ScoreDial";
 import TurnTimeline from "@/components/TurnTimeline";
+import HistoryScreen from "@/components/HistoryScreen";
 
 const TOTAL_TURNS = 6;
 
@@ -21,9 +30,12 @@ interface DebriefData {
   strategyLabel: string;
   annotations: string[];
   keyTakeaway: string;
+  tacticsUsed: string[];
+  missedOpportunities: string[];
+  languageFlags: LanguageFlag[];
 }
 
-type Screen = "setup" | "negotiation" | "debrief";
+type Screen = "setup" | "negotiation" | "debrief" | "history";
 
 export default function Home() {
   // Setup state
@@ -54,10 +66,24 @@ export default function Home() {
   const [debrief, setDebrief] = useState<DebriefData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
+  // History state
+  const [storageAvailable, setStorageAvailable] = useState(false);
+  const [sessionCount, setSessionCount] = useState(0);
+  const [showToast, setShowToast] = useState(false);
+
   // Refs
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const debriefRef = useRef<HTMLDivElement>(null);
+
+  // Check localStorage availability on mount
+  useEffect(() => {
+    const available = isStorageAvailable();
+    setStorageAvailable(available);
+    if (available) {
+      setSessionCount(getSessions().length);
+    }
+  }, []);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -114,6 +140,80 @@ export default function Home() {
     setMomentumHistory([50]);
     setError(null);
   };
+
+  // Save session to localStorage
+  const saveCurrentSession = useCallback(
+    (debriefData: DebriefData, finalMessages: Message[], momHistory: number[]) => {
+      if (!storageAvailable || !activeStrategy) return;
+
+      const presetMatch = SCENARIOS.find((s) => s.briefing === scenario);
+      const scenarioTitle = presetMatch
+        ? presetMatch.label
+        : "Custom Scenario";
+      const scenarioDesc = isCustomScenario
+        ? scenario.slice(0, 200)
+        : presetMatch?.briefing || scenario.slice(0, 200);
+
+      // Build turn records from messages
+      const turns = [];
+      for (let i = 0; i < finalMessages.length; i += 2) {
+        const userMsg = finalMessages[i];
+        const aiMsg = finalMessages[i + 1];
+        if (userMsg && aiMsg) {
+          const turnIdx = Math.floor(i / 2);
+          turns.push({
+            turnNumber: turnIdx + 1,
+            userMessage: userMsg.content,
+            aiResponse: aiMsg.content,
+            momentum: momHistory[turnIdx + 1] ?? 50,
+          });
+        }
+      }
+
+      // Parse annotations from strings to Annotation objects
+      const annotations: Annotation[] = debriefData.annotations.map((a, idx) => {
+        const match = a.match(/^Turn\s+(\d+):\s*(.*)/);
+        return {
+          turnNumber: match ? parseInt(match[1]) : idx + 1,
+          text: match ? match[2] : a,
+        };
+      });
+
+      // Momentum values (skip initial 50)
+      const momentumValues = momHistory.slice(1);
+
+      const result: SessionResult = {
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        scenario: {
+          title: scenarioTitle,
+          description: scenarioDesc,
+          isCustom: isCustomScenario,
+        },
+        strategy: {
+          id: activeStrategy.id,
+          name: activeStrategy.label,
+        },
+        score: debriefData.overallScore,
+        momentum: momentumValues,
+        turns,
+        debrief: {
+          summary: debriefData.keyTakeaway,
+          annotations,
+          tacticsUsed: debriefData.tacticsUsed || [],
+          missedOpportunities: debriefData.missedOpportunities || [],
+          languageFlags: debriefData.languageFlags || [],
+          keyTakeaway: debriefData.keyTakeaway,
+        },
+      };
+
+      saveSession(result);
+      setSessionCount((prev) => prev + 1);
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000);
+    },
+    [storageAvailable, activeStrategy, scenario, isCustomScenario]
+  );
 
   // Send turn
   const sendTurn = useCallback(async () => {
@@ -200,6 +300,13 @@ export default function Home() {
       const data: DebriefData = await res.json();
       setDebrief(data);
       setScreen("debrief");
+
+      // Save session to localStorage
+      // Use current momentumHistory + capture at this point
+      setMomentumHistory((prev) => {
+        saveCurrentSession(data, finalMessages, prev);
+        return prev;
+      });
     } catch {
       setError("Failed to analyze your negotiation. Refresh and try again.");
     } finally {
@@ -278,6 +385,15 @@ export default function Home() {
     }
   };
 
+  // Language flag badge colors
+  const flagBadgeColor: Record<string, string> = {
+    assertive: "bg-emerald-400/15 text-emerald-400",
+    specific: "bg-emerald-400/15 text-emerald-400",
+    hedging: "bg-amber-400/15 text-amber-400",
+    vague: "bg-amber-400/15 text-amber-400",
+    emotional: "bg-red-400/15 text-red-400",
+  };
+
   return (
     <main className="min-h-dvh flex flex-col">
       {/* Header - always visible */}
@@ -292,14 +408,16 @@ export default function Home() {
             </h1>
           </button>
 
-          {screen !== "setup" && (
-            <button
-              onClick={resetGame}
-              className="text-xs font-mono text-muted hover:text-accent transition-colors tracking-wide uppercase"
-            >
-              New game
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {screen !== "setup" && screen !== "history" && (
+              <button
+                onClick={resetGame}
+                className="text-xs font-mono text-muted hover:text-accent transition-colors tracking-wide uppercase"
+              >
+                New game
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -307,8 +425,21 @@ export default function Home() {
         {/* ── SCREEN 1: SETUP ── */}
         {screen === "setup" && (
           <div className="screen-enter px-4 py-6 space-y-8">
-            {/* Tagline */}
-            <div className="text-center space-y-2 pt-4">
+            {/* Tagline + History button */}
+            <div className="text-center space-y-2 pt-4 relative">
+              {storageAvailable && (
+                <button
+                  onClick={() => setScreen("history")}
+                  className="absolute top-4 right-0 text-xs font-mono text-muted hover:text-accent transition-colors tracking-wide uppercase flex items-center gap-1.5"
+                >
+                  History
+                  {sessionCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] rounded-full bg-accent/20 text-accent text-[10px] font-mono px-1">
+                      {sessionCount}
+                    </span>
+                  )}
+                </button>
+              )}
               <p className="font-display text-2xl text-gray-100 italic">
                 Practice tough negotiations.
               </p>
@@ -436,7 +567,8 @@ export default function Home() {
                   opponent&apos;s strategy is revealed.
                 </p>
                 <p>
-                  No data is stored. No accounts. Just practice.
+                  Your sessions are saved locally so you can track your progress
+                  over time.
                 </p>
               </div>
             </details>
@@ -594,6 +726,77 @@ export default function Home() {
                   {debrief.keyTakeaway}
                 </p>
               </section>
+
+              {/* Tactics Used */}
+              {debrief.tacticsUsed && debrief.tacticsUsed.length > 0 && (
+                <section className="space-y-3">
+                  <h2 className="text-xs font-mono text-muted tracking-wider uppercase">
+                    Tactics Identified
+                  </h2>
+                  <div className="space-y-2">
+                    {debrief.tacticsUsed.map((tactic, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-2 text-sm text-gray-300"
+                      >
+                        <span className="text-accent mt-0.5 shrink-0">·</span>
+                        <span>{tactic}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Missed Opportunities */}
+              {debrief.missedOpportunities && debrief.missedOpportunities.length > 0 && (
+                <section className="space-y-3">
+                  <h2 className="text-xs font-mono text-muted tracking-wider uppercase">
+                    Missed Opportunities
+                  </h2>
+                  <div className="space-y-2">
+                    {debrief.missedOpportunities.map((opp, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-2 text-sm text-gray-400"
+                      >
+                        <span className="text-subtle mt-0.5 shrink-0">·</span>
+                        <span>{opp}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Language Flags */}
+              {debrief.languageFlags && debrief.languageFlags.length > 0 && (
+                <section className="space-y-3">
+                  <h2 className="text-xs font-mono text-muted tracking-wider uppercase">
+                    Language Analysis
+                  </h2>
+                  <div className="space-y-2.5">
+                    {debrief.languageFlags.map((flag, i) => (
+                      <div
+                        key={i}
+                        className="bg-surface-raised border border-subtle rounded-lg px-3 py-2.5 flex items-start gap-2.5"
+                      >
+                        <span
+                          className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 mt-0.5 ${flagBadgeColor[flag.type] || "bg-subtle/50 text-muted"}`}
+                        >
+                          {flag.label}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm text-gray-300 leading-relaxed">
+                            {flag.detail}
+                          </p>
+                          <p className="text-[10px] font-mono text-subtle mt-1">
+                            Turn {flag.turnNumber}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
             </div>
 
             {/* Share buttons */}
@@ -630,16 +833,43 @@ export default function Home() {
               </div>
             </section>
 
-            {/* Play again */}
-            <button
-              onClick={resetGame}
-              className="btn-primary w-full py-3.5 rounded-lg text-sm tracking-wide"
-            >
-              New Negotiation
-            </button>
+            {/* Actions */}
+            <div className="space-y-3">
+              <button
+                onClick={resetGame}
+                className="btn-primary w-full py-3.5 rounded-lg text-sm tracking-wide"
+              >
+                New Negotiation
+              </button>
+              {storageAvailable && (
+                <button
+                  onClick={() => setScreen("history")}
+                  className="w-full py-2.5 rounded-lg text-sm text-muted border border-subtle hover:border-muted hover:text-gray-200 transition-colors"
+                >
+                  View History
+                </button>
+              )}
+            </div>
           </div>
         )}
+
+        {/* ── SCREEN 4: HISTORY ── */}
+        {screen === "history" && (
+          <HistoryScreen
+            onBack={resetGame}
+            onNewSession={resetGame}
+          />
+        )}
       </div>
+
+      {/* Session saved toast */}
+      {showToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 toast-enter">
+          <div className="bg-surface-raised border border-subtle rounded-lg px-4 py-2 text-sm text-muted shadow-lg">
+            Session saved
+          </div>
+        </div>
+      )}
     </main>
   );
 }

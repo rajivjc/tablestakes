@@ -27,7 +27,7 @@ export default function MomentumMeter({
       {/* Turn counter and label */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-mono text-muted tracking-wide uppercase">
-          Move {turnNumber} of {totalTurns}
+          Move {Math.max(turnNumber, 1)} of {totalTurns}
         </span>
         <span
           className="text-xs font-medium transition-colors duration-300"

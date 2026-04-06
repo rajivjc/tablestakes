@@ -208,6 +208,8 @@ export default function Home() {
   };
 
   // Share
+  const [copied, setCopied] = useState(false);
+
   const shareText = debrief
     ? `I negotiated against an AI playing ${debrief.strategyLabel}. Scored ${debrief.overallScore}/100. Think you can do better?\ntablestakes.vercel.app`
     : "";
@@ -215,12 +217,14 @@ export default function Home() {
   const handleShare = async (platform: "linkedin" | "x" | "copy") => {
     if (platform === "copy") {
       await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
       return;
     }
     const encodedText = encodeURIComponent(shareText);
     const url =
       platform === "linkedin"
-        ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://tablestakes.vercel.app")}&summary=${encodedText}`
+        ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://tablestakes.vercel.app")}`
         : `https://x.com/intent/post?text=${encodedText}`;
     window.open(url, "_blank");
   };
@@ -571,7 +575,7 @@ export default function Home() {
                   onClick={() => handleShare("copy")}
                   className="chip border border-subtle rounded-lg py-2.5 text-sm text-gray-300 hover:border-muted text-center"
                 >
-                  Copy
+                  {copied ? "Copied" : "Copy"}
                 </button>
               </div>
             </section>

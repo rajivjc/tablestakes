@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     if (body.type === "turn") {
       return handleTurn(body, ip);
     } else if (body.type === "debrief") {
-      return handleDebrief(body);
+      return handleDebrief(body, ip);
     } else {
       return NextResponse.json({ error: "Invalid request type" }, { status: 400 });
     }
@@ -138,7 +138,7 @@ async function handleTurn(body: TurnRequest, ip: string) {
   }
 
   // Validate conversation history length
-  const expectedLength = (body.turnNumber - 1) * 2;
+  const expectedLength = (body.turnNumber - 1) * 2 + 1;
   if (body.messages.length !== expectedLength) {
     return NextResponse.json(
       { error: "Invalid conversation history" },
@@ -226,7 +226,16 @@ async function handleTurn(body: TurnRequest, ip: string) {
   });
 }
 
-async function handleDebrief(body: DebriefRequest) {
+async function handleDebrief(body: DebriefRequest, ip: string) {
+  // Per-IP request rate limit (checked on every request)
+  const requestRateCheck = checkRequestRateLimit(ip);
+  if (!requestRateCheck.allowed) {
+    return NextResponse.json(
+      { error: requestRateCheck.reason },
+      { status: 429 }
+    );
+  }
+  incrementRequestRateLimit(ip);
   // Build conversation for debrief
   const conversationText = body.messages
     .map(

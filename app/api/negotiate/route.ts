@@ -5,7 +5,7 @@ import {
   buildMomentumPrompt,
   buildDebriefPrompt,
 } from "@/lib/prompts";
-import { parseResponse } from "@/lib/parseResponse";
+import { parseResponse, parseDebriefResponse } from "@/lib/parseResponse";
 import { checkRateLimit, incrementRateLimit, checkRequestRateLimit, incrementRequestRateLimit } from "@/lib/rateLimit";
 import { validateInput, redactPII } from "@/lib/security";
 import { getStrategyById } from "@/lib/strategies";
@@ -265,11 +265,7 @@ async function handleDebrief(body: DebriefRequest, ip: string) {
     debriefResult.content[0].type === "text"
       ? debriefResult.content[0].text
       : "";
-  const debriefParsed = parseResponse<{
-    overallScore: number;
-    annotations: string[];
-    keyTakeaway: string;
-  }>(debriefText);
+  const debriefParsed = parseDebriefResponse(debriefText);
 
   if (!debriefParsed) {
     return NextResponse.json(
@@ -282,7 +278,10 @@ async function handleDebrief(body: DebriefRequest, ip: string) {
     overallScore: Math.max(0, Math.min(100, debriefParsed.overallScore)),
     strategy: body.strategyId,
     strategyLabel: body.strategyLabel,
-    annotations: debriefParsed.annotations || [],
-    keyTakeaway: debriefParsed.keyTakeaway || "",
+    annotations: debriefParsed.annotations,
+    keyTakeaway: debriefParsed.keyTakeaway,
+    tacticsUsed: debriefParsed.tacticsUsed,
+    missedOpportunities: debriefParsed.missedOpportunities,
+    languageFlags: debriefParsed.languageFlags,
   });
 }

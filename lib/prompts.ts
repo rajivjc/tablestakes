@@ -137,7 +137,27 @@ Format each annotation as "Turn N: [annotation text]"
     "Turn 5: ...",
     "Turn 6: ..."
   ],
-  "keyTakeaway": "One sentence."
+  "keyTakeaway": "One sentence.",
+  "tacticsUsed": [
+    "Name the tactic and cite the turn — e.g. Strong opening anchor in turn 1"
+  ],
+  "missedOpportunities": [
+    "Be specific — reference actual turns and what could have been said or done"
+  ],
+  "languageFlags": [
+    {
+      "type": "hedging|assertive|emotional|vague|specific",
+      "label": "Human-readable label",
+      "detail": "Explanation referencing a specific turn",
+      "turnNumber": NUMBER
+    }
+  ]
 }
+
+Additional field instructions:
+- tacticsUsed: List 2-4 specific negotiation tactics the user employed. Name the tactic and cite the turn. If the user didn't employ any recognizable tactics, return an empty array.
+- missedOpportunities: List 1-3 things the user could have done differently. Be specific — reference actual turns and what could have been said or done.
+- languageFlags: Identify 2-4 notable language patterns. Mix of positive and negative. Each must reference a specific turn. Types: hedging (weak language), assertive (strong language), emotional (anger/frustration/flattery), vague (unspecific proposals), specific (concrete numbers/terms).
+- Keep total output under 400 tokens. The existing fields keep their current constraints.
 </rules>`;
 }

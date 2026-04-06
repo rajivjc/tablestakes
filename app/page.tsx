@@ -211,7 +211,7 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
 
   const shareText = debrief
-    ? `I negotiated against an AI playing ${debrief.strategyLabel}. Scored ${debrief.overallScore}/100. Think you can do better?\ntablestakes.vercel.app`
+    ? `I negotiated against an AI playing ${debrief.strategyLabel}. Scored ${debrief.overallScore}/100. Think you can do better?\ntablestakes-sage.vercel.app`
     : "";
 
   const handleShare = async (platform: "linkedin" | "x" | "copy") => {
@@ -224,7 +224,7 @@ export default function Home() {
     const encodedText = encodeURIComponent(shareText);
     const url =
       platform === "linkedin"
-        ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://tablestakes.vercel.app")}`
+        ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://tablestakes-sage.vercel.app")}`
         : `https://x.com/intent/post?text=${encodedText}`;
     window.open(url, "_blank");
   };

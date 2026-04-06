@@ -2,7 +2,7 @@
 
 Practice tough negotiations against an AI with a hidden strategy, then see what you missed.
 
-**[tablestakes.vercel.app](https://tablestakes.vercel.app)**
+**[tablestakes-sage.vercel.app](https://tablestakes-sage.vercel.app)**
 
 ## How it works
 

@@ -7,7 +7,7 @@ Multi-turn negotiation simulator. User practices negotiations against an AI oppo
 - Next.js 15.5.14, React 19, TypeScript
 - Anthropic API (Claude Haiku) — 13 calls per session
 - Tailwind CSS (inline, no separate CSS files beyond globals.css)
-- Vercel deployment at tablestakes.vercel.app
+- Vercel deployment at tablestakes-sage.vercel.app
 - No database, no auth, no cookies
 
 ## Architecture

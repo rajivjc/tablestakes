@@ -48,7 +48,7 @@ function isValidOrigin(request: NextRequest): boolean {
   if (!origin) return false;
   const allowedOrigins = [
     `https://${host}`,
-    "https://tablestakes.vercel.app",
+    "https://tablestakes-sage.vercel.app",
   ];
   return allowedOrigins.includes(origin);
 }
@@ -182,7 +182,7 @@ async function handleTurn(body: TurnRequest, ip: string) {
   const [negotiatorResult, momentumResult] = await Promise.all([
     client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 150,
+      max_tokens: 100,
       system: buildNegotiatorPrompt(
         body.scenario,
         strategy.promptFragment,

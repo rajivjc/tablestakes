@@ -4,8 +4,9 @@ import {
   buildNegotiatorPrompt,
   buildMomentumPrompt,
   buildDebriefPrompt,
+  getDrillSystemPrompt,
 } from "@/lib/prompts";
-import { parseResponse, parseDebriefResponse } from "@/lib/parseResponse";
+import { parseResponse, parseDebriefResponse, parseDrillResponse } from "@/lib/parseResponse";
 import { checkRateLimit, incrementRateLimit, checkRequestRateLimit, incrementRequestRateLimit } from "@/lib/rateLimit";
 import { validateInput, redactPII } from "@/lib/security";
 import { getStrategyById } from "@/lib/strategies";
@@ -38,7 +39,17 @@ interface DebriefRequest {
   messages: Message[];
 }
 
-type NegotiateRequest = TurnRequest | DebriefRequest;
+interface DrillRequest {
+  type: "drill";
+  drillType: string;
+  scenarioContext: string;
+  opponentStatement: string;
+  userResponse: string;
+  gradingFocus: string[];
+  batna?: string;
+}
+
+type NegotiateRequest = TurnRequest | DebriefRequest | DrillRequest;
 
 // Validate origin
 function isValidOrigin(request: NextRequest): boolean {
@@ -81,19 +92,23 @@ export async function POST(request: NextRequest) {
 
     const body: NegotiateRequest = await request.json();
 
-    // Validate scenario input
-    const scenarioCheck = validateInput(body.scenario);
-    if (!scenarioCheck.valid) {
-      return NextResponse.json(
-        { error: scenarioCheck.reason },
-        { status: 400 }
-      );
+    // Validate scenario input (turn and debrief only — drills validate userResponse instead)
+    if (body.type === "turn" || body.type === "debrief") {
+      const scenarioCheck = validateInput(body.scenario);
+      if (!scenarioCheck.valid) {
+        return NextResponse.json(
+          { error: scenarioCheck.reason },
+          { status: 400 }
+        );
+      }
     }
 
     if (body.type === "turn") {
       return handleTurn(body, ip);
     } else if (body.type === "debrief") {
       return handleDebrief(body, ip);
+    } else if (body.type === "drill") {
+      return handleDrill(body, ip);
     } else {
       return NextResponse.json({ error: "Invalid request type" }, { status: 400 });
     }
@@ -284,4 +299,75 @@ async function handleDebrief(body: DebriefRequest, ip: string) {
     missedOpportunities: debriefParsed.missedOpportunities,
     languageFlags: debriefParsed.languageFlags,
   });
+}
+
+const VALID_DRILL_TYPES = ["anchoring", "countering", "walking-away", "reframing"];
+
+async function handleDrill(body: DrillRequest, ip: string) {
+  // Per-IP request rate limit
+  const requestRateCheck = checkRequestRateLimit(ip);
+  if (!requestRateCheck.allowed) {
+    return NextResponse.json(
+      { error: requestRateCheck.reason },
+      { status: 429 }
+    );
+  }
+
+  // Validate drill type
+  if (!VALID_DRILL_TYPES.includes(body.drillType)) {
+    return NextResponse.json(
+      { error: "Invalid drill type" },
+      { status: 400 }
+    );
+  }
+
+  // Validate user response
+  const responseCheck = validateInput(body.userResponse);
+  if (!responseCheck.valid) {
+    return NextResponse.json({ error: responseCheck.reason }, { status: 400 });
+  }
+
+  // Validate gradingFocus is an array of strings
+  if (!Array.isArray(body.gradingFocus) || body.gradingFocus.some((f) => typeof f !== "string")) {
+    return NextResponse.json(
+      { error: "Invalid grading focus" },
+      { status: 400 }
+    );
+  }
+
+  incrementRequestRateLimit(ip);
+
+  const systemPrompt = getDrillSystemPrompt(
+    body.drillType,
+    body.scenarioContext,
+    body.opponentStatement,
+    body.userResponse,
+    body.gradingFocus,
+    body.batna
+  );
+
+  const result = await client.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 300,
+    temperature: 0.3,
+    system: systemPrompt,
+    messages: [
+      {
+        role: "user",
+        content: "Grade this drill response. Return only the JSON object.",
+      },
+    ],
+  });
+
+  const text = result.content[0].type === "text" ? result.content[0].text : "";
+  const parsed = parseDrillResponse(text);
+
+  if (!parsed) {
+    return NextResponse.json(
+      { error: "Failed to grade drill response. Try again." },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json(parsed);
 }

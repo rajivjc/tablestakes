@@ -47,8 +47,23 @@ export interface SessionResult {
   };
 }
 
+export interface DrillResult {
+  id: string;
+  timestamp: number;
+  type: "anchoring" | "countering" | "walking-away" | "reframing";
+  scenarioId: string;
+  scenarioTitle: string;
+  userResponse: string;
+  score: number;
+  verdict: string;
+  whatWorked: string[];
+  whatToImprove: string[];
+}
+
 const STORAGE_KEY = 'tablestakes_sessions';
+const DRILL_STORAGE_KEY = 'tablestakes-drills';
 const MAX_SESSIONS = 50;
+const MAX_DRILLS = 100;
 
 export function isStorageAvailable(): boolean {
   try {
@@ -100,6 +115,42 @@ export function clearSessions(): void {
   try {
     if (!isStorageAvailable()) return;
     localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Fail silently
+  }
+}
+
+// ── Drill Storage ──
+
+export function saveDrillResult(result: DrillResult): void {
+  try {
+    if (!isStorageAvailable()) return;
+    const results = getDrillResults();
+    results.unshift(result);
+    if (results.length > MAX_DRILLS) {
+      results.length = MAX_DRILLS;
+    }
+    localStorage.setItem(DRILL_STORAGE_KEY, JSON.stringify(results));
+  } catch {
+    // Fail silently
+  }
+}
+
+export function getDrillResults(): DrillResult[] {
+  try {
+    if (!isStorageAvailable()) return [];
+    const raw = localStorage.getItem(DRILL_STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as DrillResult[];
+  } catch {
+    return [];
+  }
+}
+
+export function clearDrillResults(): void {
+  try {
+    if (!isStorageAvailable()) return;
+    localStorage.removeItem(DRILL_STORAGE_KEY);
   } catch {
     // Fail silently
   }

@@ -4,7 +4,7 @@
 Multi-turn negotiation simulator. User practices negotiations against an AI opponent playing a hidden (or chosen) strategy. 6 fixed turns, momentum tracking, full debrief with score and annotations.
 
 ## Stack
-- Next.js 15.2.4, React 19, TypeScript
+- Next.js 15.5.14, React 19, TypeScript
 - Anthropic API (Claude Haiku) — 13 calls per session
 - Tailwind CSS (inline, no separate CSS files beyond globals.css)
 - Vercel deployment at tablestakes.vercel.app

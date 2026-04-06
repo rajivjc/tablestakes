@@ -6,8 +6,9 @@ import {
   buildDebriefPrompt,
 } from "@/lib/prompts";
 import { parseResponse } from "@/lib/parseResponse";
-import { checkRateLimit, incrementRateLimit } from "@/lib/rateLimit";
+import { checkRateLimit, incrementRateLimit, checkRequestRateLimit, incrementRequestRateLimit } from "@/lib/rateLimit";
 import { validateInput, redactPII } from "@/lib/security";
+import { getStrategyById } from "@/lib/strategies";
 
 const client = new Anthropic();
 
@@ -22,8 +23,6 @@ interface TurnRequest {
   type: "turn";
   scenario: string;
   strategyId: string;
-  strategyLabel: string;
-  strategyPromptFragment: string;
   turnNumber: number;
   totalTurns: number;
   messages: Message[];
@@ -108,7 +107,16 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleTurn(body: TurnRequest, ip: string) {
-  // Rate limit on first turn only (counts as one session)
+  // Per-IP request rate limit (checked on every request)
+  const requestRateCheck = checkRequestRateLimit(ip);
+  if (!requestRateCheck.allowed) {
+    return NextResponse.json(
+      { error: requestRateCheck.reason },
+      { status: 429 }
+    );
+  }
+
+  // Session rate limit on first turn only
   if (body.turnNumber === 1) {
     const rateCheck = checkRateLimit(ip);
     if (!rateCheck.allowed) {
@@ -120,6 +128,35 @@ async function handleTurn(body: TurnRequest, ip: string) {
     incrementRateLimit(ip);
   }
 
+  // Resolve strategy server-side
+  const strategy = getStrategyById(body.strategyId);
+  if (!strategy) {
+    return NextResponse.json(
+      { error: "Invalid strategy" },
+      { status: 400 }
+    );
+  }
+
+  // Validate conversation history length
+  const expectedLength = (body.turnNumber - 1) * 2;
+  if (body.messages.length !== expectedLength) {
+    return NextResponse.json(
+      { error: "Invalid conversation history" },
+      { status: 400 }
+    );
+  }
+
+  // Validate message roles alternate correctly (user, assistant, user, assistant, ...)
+  for (let i = 0; i < body.messages.length; i++) {
+    const expectedRole = i % 2 === 0 ? "user" : "assistant";
+    if (body.messages[i].role !== expectedRole) {
+      return NextResponse.json(
+        { error: "Invalid conversation history" },
+        { status: 400 }
+      );
+    }
+  }
+
   // Validate the latest user message
   const lastUserMsg = body.messages[body.messages.length - 1];
   if (lastUserMsg?.role === "user") {
@@ -128,6 +165,9 @@ async function handleTurn(body: TurnRequest, ip: string) {
       return NextResponse.json({ error: msgCheck.reason }, { status: 400 });
     }
   }
+
+  // Increment request count after all validation passes
+  incrementRequestRateLimit(ip);
 
   // Build conversation history with input wrapping
   const wrappedMessages = body.messages.map((m) => ({
@@ -145,7 +185,7 @@ async function handleTurn(body: TurnRequest, ip: string) {
       max_tokens: 150,
       system: buildNegotiatorPrompt(
         body.scenario,
-        body.strategyPromptFragment,
+        strategy.promptFragment,
         body.turnNumber,
         body.totalTurns
       ),

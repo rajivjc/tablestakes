@@ -209,6 +209,7 @@ export default function Home() {
 
   // Share
   const [copied, setCopied] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const shareText = debrief
     ? `I negotiated against an AI playing ${debrief.strategyLabel}. Scored ${debrief.overallScore}/100. Think you can do better?\ntablestakes-sage.vercel.app`
@@ -227,6 +228,33 @@ export default function Home() {
         ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://tablestakes-sage.vercel.app")}`
         : `https://x.com/intent/post?text=${encodedText}`;
     window.open(url, "_blank");
+  };
+
+  const handleDownload = async () => {
+    if (!debriefRef.current || isSaving) return;
+    setIsSaving(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(debriefRef.current, {
+        backgroundColor: "#0a0a0c",
+        useCORS: true,
+        allowTaint: true,
+        scale: 2,
+      });
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "tablestakes-result.png";
+        a.click();
+        URL.revokeObjectURL(url);
+      }, "image/png");
+    } catch {
+      // Silently fail — download is best-effort
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Reset
@@ -514,66 +542,66 @@ export default function Home() {
 
         {/* ── SCREEN 3: DEBRIEF ── */}
         {screen === "debrief" && debrief && (
-          <div
-            className="screen-enter px-4 py-6 space-y-8 pb-24"
-            ref={debriefRef}
-          >
-            {/* Score dial */}
-            <div className="pt-4">
-              <ScoreDial score={debrief.overallScore} />
+          <div className="screen-enter px-4 py-6 space-y-8 pb-24">
+            {/* Capturable area */}
+            <div ref={debriefRef} className="space-y-8">
+              {/* Score dial */}
+              <div className="pt-4">
+                <ScoreDial score={debrief.overallScore} />
+              </div>
+
+              {/* Strategy reveal */}
+              <div className="text-center space-y-1">
+                {strategyChoice === "random" ? (
+                  <>
+                    <p className="text-xs font-mono text-muted tracking-wider uppercase">
+                      Your opponent was playing
+                    </p>
+                    <p className="font-display text-xl text-accent italic">
+                      {debrief.strategyLabel}
+                    </p>
+                    <p className="text-sm text-gray-400">
+                      {STRATEGIES.find((s) => s.id === debrief.strategy)
+                        ?.description || ""}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs font-mono text-muted tracking-wider uppercase">
+                      You practiced against
+                    </p>
+                    <p className="font-display text-xl text-accent italic">
+                      {debrief.strategyLabel}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* Turn-by-turn timeline */}
+              <section className="space-y-3">
+                <h2 className="text-xs font-mono text-muted tracking-wider uppercase">
+                  Turn-by-Turn Analysis
+                </h2>
+                <TurnTimeline annotations={debrief.annotations} />
+              </section>
+
+              {/* Key takeaway */}
+              <section className="bg-surface-raised border border-accent/20 rounded-lg p-4">
+                <p className="text-xs font-mono text-accent tracking-wider uppercase mb-2">
+                  Key Takeaway
+                </p>
+                <p className="text-sm text-gray-200 leading-relaxed">
+                  {debrief.keyTakeaway}
+                </p>
+              </section>
             </div>
-
-            {/* Strategy reveal */}
-            <div className="text-center space-y-1">
-              {strategyChoice === "random" ? (
-                <>
-                  <p className="text-xs font-mono text-muted tracking-wider uppercase">
-                    Your opponent was playing
-                  </p>
-                  <p className="font-display text-xl text-accent italic">
-                    {debrief.strategyLabel}
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    {STRATEGIES.find((s) => s.id === debrief.strategy)
-                      ?.description || ""}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="text-xs font-mono text-muted tracking-wider uppercase">
-                    You practiced against
-                  </p>
-                  <p className="font-display text-xl text-accent italic">
-                    {debrief.strategyLabel}
-                  </p>
-                </>
-              )}
-            </div>
-
-            {/* Turn-by-turn timeline */}
-            <section className="space-y-3">
-              <h2 className="text-xs font-mono text-muted tracking-wider uppercase">
-                Turn-by-Turn Analysis
-              </h2>
-              <TurnTimeline annotations={debrief.annotations} />
-            </section>
-
-            {/* Key takeaway */}
-            <section className="bg-surface-raised border border-accent/20 rounded-lg p-4">
-              <p className="text-xs font-mono text-accent tracking-wider uppercase mb-2">
-                Key Takeaway
-              </p>
-              <p className="text-sm text-gray-200 leading-relaxed">
-                {debrief.keyTakeaway}
-              </p>
-            </section>
 
             {/* Share buttons */}
             <section className="space-y-3">
               <h2 className="text-xs font-mono text-muted tracking-wider uppercase">
                 Share your result
               </h2>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <button
                   onClick={() => handleShare("linkedin")}
                   className="chip border border-subtle rounded-lg py-2.5 text-sm text-gray-300 hover:border-muted text-center"
@@ -591,6 +619,13 @@ export default function Home() {
                   className="chip border border-subtle rounded-lg py-2.5 text-sm text-gray-300 hover:border-muted text-center"
                 >
                   {copied ? "Copied" : "Copy"}
+                </button>
+                <button
+                  onClick={handleDownload}
+                  disabled={isSaving}
+                  className="chip border border-subtle rounded-lg py-2.5 text-sm text-gray-300 hover:border-muted text-center disabled:opacity-50"
+                >
+                  {isSaving ? "Saving..." : "Download"}
                 </button>
               </div>
             </section>

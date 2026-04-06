@@ -34,6 +34,31 @@ export interface ParsedLanguageFlag {
 }
 
 /**
+ * Parsed drill response.
+ */
+export interface ParsedDrillResponse {
+  score: number;
+  verdict: string;
+  whatWorked: string[];
+  whatToImprove: string[];
+}
+
+/**
+ * Parse drill grading response with safe fallbacks.
+ */
+export function parseDrillResponse(raw: string): ParsedDrillResponse | null {
+  const parsed = parseResponse<Record<string, unknown>>(raw);
+  if (!parsed || typeof parsed.score !== "number") return null;
+
+  return {
+    score: Math.max(0, Math.min(100, parsed.score)),
+    verdict: typeof parsed.verdict === "string" ? parsed.verdict : "No verdict provided.",
+    whatWorked: Array.isArray(parsed.whatWorked) ? (parsed.whatWorked as string[]).slice(0, 3) : [],
+    whatToImprove: Array.isArray(parsed.whatToImprove) ? (parsed.whatToImprove as string[]).slice(0, 3) : [],
+  };
+}
+
+/**
  * Extended debrief response with new Phase 1 fields.
  */
 export interface ParsedDebrief {

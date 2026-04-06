@@ -81,6 +81,39 @@ Score from 0 to 100:
 </rules>`;
 }
 
+export function getDrillSystemPrompt(
+  drillType: string,
+  scenarioContext: string,
+  opponentStatement: string,
+  userResponse: string,
+  gradingFocus: string[],
+  batna?: string
+): string {
+  return `You are a negotiation coach grading a single-turn drill exercise.
+
+Drill type: ${drillType}
+Scenario: ${scenarioContext}
+Opponent said: "${opponentStatement}"
+${batna ? `The user's BATNA: ${batna}` : ""}
+
+The user responded with:
+"${userResponse}"
+
+Grade this response on a 0-100 scale based on these criteria:
+${gradingFocus.map((f) => `- ${f}`).join("\n")}
+
+Respond in this exact JSON format:
+{
+  "score": <number 0-100>,
+  "verdict": "<one sentence overall assessment>",
+  "whatWorked": ["<point 1>", "<point 2>"],
+  "whatToImprove": ["<point 1>", "<point 2>"]
+}
+
+Be direct. No filler. Grade tough — 70+ means genuinely good. Under 40 means fundamental mistakes.
+Keep verdict under 20 words. Keep each bullet point under 15 words.`;
+}
+
 export function buildDebriefPrompt(
   scenario: string,
   strategyLabel: string,

@@ -11,11 +11,14 @@ import {
   type LanguageFlag,
   type Annotation,
 } from "@/lib/storage";
+import { type DrillType } from "@/lib/drillScenarios";
 import MomentumMeter from "@/components/MomentumMeter";
 import ChatBubble, { TypingIndicator } from "@/components/ChatBubble";
 import ScoreDial from "@/components/ScoreDial";
 import TurnTimeline from "@/components/TurnTimeline";
 import HistoryScreen from "@/components/HistoryScreen";
+import DrillPicker from "@/components/DrillPicker";
+import DrillActive from "@/components/DrillActive";
 
 const TOTAL_TURNS = 6;
 
@@ -35,7 +38,7 @@ interface DebriefData {
   languageFlags: LanguageFlag[];
 }
 
-type Screen = "setup" | "negotiation" | "debrief" | "history";
+type Screen = "setup" | "negotiation" | "debrief" | "history" | "drill-picker" | "drill-active";
 
 export default function Home() {
   // Setup state
@@ -65,6 +68,9 @@ export default function Home() {
   // Debrief state
   const [debrief, setDebrief] = useState<DebriefData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Drill state
+  const [activeDrillType, setActiveDrillType] = useState<DrillType | null>(null);
 
   // History state
   const [storageAvailable, setStorageAvailable] = useState(false);
@@ -364,6 +370,16 @@ export default function Home() {
     }
   };
 
+  // Drill navigation
+  const startDrillPicker = () => {
+    setScreen("drill-picker");
+  };
+
+  const startDrill = (type: DrillType) => {
+    setActiveDrillType(type);
+    setScreen("drill-active");
+  };
+
   // Reset
   const resetGame = () => {
     setScreen("setup");
@@ -373,6 +389,7 @@ export default function Home() {
     setMomentumHistory([50]);
     setDebrief(null);
     setActiveStrategy(null);
+    setActiveDrillType(null);
     setError(null);
     setUserInput("");
   };
@@ -409,7 +426,7 @@ export default function Home() {
           </button>
 
           <div className="flex items-center gap-3">
-            {screen !== "setup" && screen !== "history" && (
+            {screen !== "setup" && screen !== "history" && screen !== "drill-picker" && screen !== "drill-active" && (
               <button
                 onClick={resetGame}
                 className="text-xs font-mono text-muted hover:text-accent transition-colors tracking-wide uppercase"
@@ -573,14 +590,22 @@ export default function Home() {
               </div>
             </details>
 
-            {/* Start button */}
-            <button
-              onClick={startNegotiation}
-              disabled={!scenario.trim()}
-              className="btn-primary w-full py-3.5 rounded-lg text-sm tracking-wide"
-            >
-              Start Negotiation
-            </button>
+            {/* Start buttons */}
+            <div className="space-y-3">
+              <button
+                onClick={startNegotiation}
+                disabled={!scenario.trim()}
+                className="btn-primary w-full py-3.5 rounded-lg text-sm tracking-wide"
+              >
+                Start Negotiation
+              </button>
+              <button
+                onClick={startDrillPicker}
+                className="w-full py-3.5 rounded-lg text-sm tracking-wide text-muted border border-subtle hover:border-muted hover:text-gray-200 transition-colors"
+              >
+                Quick Drill
+              </button>
+            </div>
           </div>
         )}
 
@@ -851,6 +876,23 @@ export default function Home() {
               )}
             </div>
           </div>
+        )}
+
+        {/* ── SCREEN: DRILL PICKER ── */}
+        {screen === "drill-picker" && (
+          <DrillPicker
+            onSelect={startDrill}
+            onBack={resetGame}
+          />
+        )}
+
+        {/* ── SCREEN: DRILL ACTIVE ── */}
+        {screen === "drill-active" && activeDrillType && (
+          <DrillActive
+            drillType={activeDrillType}
+            onBack={() => setScreen("drill-picker")}
+            onBackToDrills={() => setScreen("drill-picker")}
+          />
         )}
 
         {/* ── SCREEN 4: HISTORY ── */}

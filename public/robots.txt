@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://tablestakes.vercel.app/sitemap.xml

@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TableStakes — Negotiation Simulator",
+  title: "TableStakes — Practice Negotiations Against AI",
   description:
-    "Practice tough negotiations against an AI with a hidden strategy. 6 moves. Full debrief. No fluff.",
+    "Practice tough conversations before they happen. Negotiate against AI opponents with different strategies, get scored, and improve your skills.",
   metadataBase: new URL("https://tablestakes-sage.vercel.app"),
   openGraph: {
-    title: "TableStakes — Negotiation Simulator",
+    title: "TableStakes — Practice Negotiations Against AI",
     description:
-      "Practice tough negotiations against an AI with a hidden strategy. 6 moves. Full debrief.",
+      "Practice tough conversations before they happen. Negotiate against AI opponents with different strategies, get scored, and improve your skills.",
     url: "https://tablestakes-sage.vercel.app",
     siteName: "TableStakes",
     type: "website",
@@ -17,9 +17,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "TableStakes — Negotiation Simulator",
+    title: "TableStakes — Practice Negotiations Against AI",
     description:
-      "Practice tough negotiations against an AI with a hidden strategy.",
+      "Practice tough conversations before they happen. Negotiate against AI opponents with different strategies, get scored, and improve your skills.",
   },
   robots: {
     index: true,

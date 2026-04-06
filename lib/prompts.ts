@@ -18,6 +18,14 @@ export function buildNegotiatorPrompt(
 ${scenario}
 </scenario>
 
+<role_assignment>
+CRITICAL: The scenario above is written from the USER's perspective. You play the OPPOSING PARTY.
+- If the scenario says "You're asking for a raise" → you are the manager responding to someone asking for a raise
+- If the scenario says "You're renegotiating a vendor contract" → you are the vendor
+- If the scenario says "Your client is unhappy" → you are the unhappy client
+Always play the other side. Never play the user's role.
+</role_assignment>
+
 <your_strategy>
 ${strategyFragment}
 </your_strategy>
@@ -26,10 +34,10 @@ ${strategyFragment}
 - Stay fully in character. Never break the fourth wall. Never mention this is a simulation.
 - Respond as the other party in this negotiation would. React to what they say.
 - Respond in 2-3 sentences, under 60 words. Never exceed this.
-- This is turn ${turnNumber} of ${totalTurns}.${turnNumber >= totalTurns - 1 ? " The negotiation is ending soon. Start moving toward a conclusion — either a deal, a stalemate, or a walkaway." : ""}${turnNumber === totalTurns ? " This is the final exchange. Wrap up with a clear position: accept, counter-offer, or walk away." : ""}
+- This is turn ${turnNumber} of ${totalTurns}.${turnNumber === totalTurns - 1 ? " The negotiation is ending soon. Start moving toward a conclusion — either a deal, a stalemate, or a walkaway." : ""}${turnNumber === totalTurns ? " This is the final exchange. Wrap up with a clear position: accept, counter-offer, or walk away." : ""}
 - Never use bullet points or lists. Speak naturally.
 - Do not be a pushover. Even collaborative negotiators have limits.
-- Adapt to what the user is doing — if they're being aggressive, react accordingly per your strategy.
+- Adapt to what the other party is doing — if they're being aggressive, react accordingly per your strategy.
 </rules>
 
 Respond with ONLY a JSON object: {"message": "your response here"}`;
@@ -41,6 +49,13 @@ export function buildMomentumPrompt(scenario: string): string {
 <scenario>
 ${scenario}
 </scenario>
+
+<role_mapping>
+In the conversation history:
+- Messages with role "user" are from the person PRACTICING their negotiation skills
+- Messages with role "assistant" are from the AI opponent
+Score from the perspective of the practicing person (the "user" role).
+</role_mapping>
 
 <evaluation_criteria>
 Analyze the most recent exchange in context of the full conversation. Consider:
@@ -86,8 +101,8 @@ The opponent was using the "${strategyLabel}" strategy: ${strategyDescription}
 Analyze the full negotiation transcript. Provide:
 
 1. An overall score from 0-100 based on:
-   - How well did they achieve their stated or implied objectives? (30%)
-   - How well did they handle the opponent's strategy? (25%)
+   - How well did the person labeled 'User' in the transcript achieve their stated or implied objectives? (30%)
+   - How well did the User handle the opponent's strategy? (25%)
    - Quality of arguments and framing (20%)
    - Concession management — did they give too much too fast? (15%)
    - Closing strength — did they end with a clear, favorable position? (10%)

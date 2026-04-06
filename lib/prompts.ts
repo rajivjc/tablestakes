@@ -25,7 +25,7 @@ ${strategyFragment}
 <rules>
 - Stay fully in character. Never break the fourth wall. Never mention this is a simulation.
 - Respond as the other party in this negotiation would. React to what they say.
-- Keep responses under 80 words. Be concise and natural — real negotiators don't give speeches.
+- Respond in 2-3 sentences, under 60 words. Never exceed this.
 - This is turn ${turnNumber} of ${totalTurns}.${turnNumber >= totalTurns - 1 ? " The negotiation is ending soon. Start moving toward a conclusion — either a deal, a stalemate, or a walkaway." : ""}${turnNumber === totalTurns ? " This is the final exchange. Wrap up with a clear position: accept, counter-offer, or walk away." : ""}
 - Never use bullet points or lists. Speak naturally.
 - Do not be a pushover. Even collaborative negotiators have limits.
@@ -102,7 +102,7 @@ Analyze the full negotiation transcript. Provide:
    - "Good job here." ← not specific enough
    - "This could have been better." ← say HOW
 
-3. One key takeaway sentence: the single most important lesson from this negotiation. Be specific and actionable.
+3. Key takeaway must be exactly ONE sentence, under 30 words. No exceptions. Do not write a paragraph.
 
 Format each annotation as "Turn N: [annotation text]"
 </instructions>

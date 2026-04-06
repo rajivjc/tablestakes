@@ -5,12 +5,12 @@ export const metadata: Metadata = {
   title: "TableStakes — Negotiation Simulator",
   description:
     "Practice tough negotiations against an AI with a hidden strategy. 6 moves. Full debrief. No fluff.",
-  metadataBase: new URL("https://tablestakes.vercel.app"),
+  metadataBase: new URL("https://tablestakes-sage.vercel.app"),
   openGraph: {
     title: "TableStakes — Negotiation Simulator",
     description:
       "Practice tough negotiations against an AI with a hidden strategy. 6 moves. Full debrief.",
-    url: "https://tablestakes.vercel.app",
+    url: "https://tablestakes-sage.vercel.app",
     siteName: "TableStakes",
     type: "website",
     locale: "en_US",

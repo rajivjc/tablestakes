@@ -19,7 +19,7 @@ export default function ChatBubble({ role, content, turnLabel }: ChatBubbleProps
         </span>
       )}
       <div
-        className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+        className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed font-body ${
           isUser
             ? "bg-accent/15 text-accent-bright rounded-br-md border border-accent/20"
             : "bg-surface-overlay text-gray-200 rounded-bl-md border border-subtle/40"

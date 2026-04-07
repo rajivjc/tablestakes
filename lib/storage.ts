@@ -3,6 +3,8 @@
  * All functions fail silently if localStorage is unavailable.
  */
 
+import { type Difficulty } from "@/lib/difficulty";
+
 export interface Annotation {
   turnNumber: number;
   text: string;
@@ -34,6 +36,7 @@ export interface SessionResult {
     id: string;
     name: string;
   };
+  difficulty?: Difficulty;
   score: number;
   momentum: number[];
   turns: TurnRecord[];

@@ -57,6 +57,17 @@ export default function SessionCard({ session }: SessionCardProps) {
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-subtle/50 text-muted">
               {session.strategy.name}
             </span>
+            {session.difficulty && (
+              <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
+                session.difficulty === "easy"
+                  ? "bg-emerald-400/15 text-emerald-400"
+                  : session.difficulty === "hard"
+                    ? "bg-red-400/15 text-red-400"
+                    : "bg-amber-400/15 text-amber-400"
+              }`}>
+                {session.difficulty === "easy" ? "Easy" : session.difficulty === "hard" ? "Hard" : "Medium"}
+              </span>
+            )}
             <span className="text-[10px] text-subtle">
               {formatRelativeDate(session.timestamp)}
             </span>

@@ -12,7 +12,7 @@ Multi-turn negotiation simulator + targeted drill trainer. User practices negoti
 - localStorage for session history (negotiations + drills, separate keys)
 
 ## Architecture
-Single-page app with 6 state-driven screens (Setup → Negotiation → Debrief → History, plus Drill Picker → Drill Active). One API route at `/api/negotiate` handles all AI calls via `type` field: `"turn"`, `"debrief"`, `"drill"`.
+Single-page app with 6 state-driven screens (Setup → Negotiation → Debrief → History, plus Drill Picker → Drill Active). One API route at `/api/negotiate` handles all AI calls via `type` field: `"turn"`, `"debrief"`, `"drill"`. Difficulty tiers (Easy/Medium/Hard) modify opponent behavior independently of strategy.
 
 **Per negotiation turn (2 parallel calls):**
 1. Negotiator — plays the opponent in character
@@ -26,6 +26,7 @@ Single-page app with 6 state-driven screens (Setup → Negotiation → Debrief �
 
 ## Key files
 - `lib/prompts.ts` — all system prompts (negotiator, momentum, debrief, drill)
+- `lib/difficulty.ts` — 3 difficulty tiers (Easy/Medium/Hard) with prompt modifiers
 - `lib/strategies.ts` — 4 strategy definitions with behavioral prompt fragments
 - `lib/scenarios.ts` — 3 preset negotiation scenarios
 - `lib/drillScenarios.ts` — 16 drill scenarios (4 types × 4 each), types, random selection helper

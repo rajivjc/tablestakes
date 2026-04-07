@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { SCENARIOS } from "@/lib/scenarios";
 import { STRATEGIES, getRandomStrategy } from "@/lib/strategies";
+import { DIFFICULTIES, type Difficulty } from "@/lib/difficulty";
 import {
   saveSession,
   isStorageAvailable,
@@ -45,6 +46,7 @@ export default function Home() {
   const [scenario, setScenario] = useState("");
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [strategyChoice, setStrategyChoice] = useState("random");
+  const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [isCustomScenario, setIsCustomScenario] = useState(false);
 
   // Game state
@@ -200,6 +202,7 @@ export default function Home() {
           id: activeStrategy.id,
           name: activeStrategy.label,
         },
+        difficulty,
         score: debriefData.overallScore,
         momentum: momentumValues,
         turns,
@@ -218,7 +221,7 @@ export default function Home() {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     },
-    [storageAvailable, activeStrategy, scenario, isCustomScenario]
+    [storageAvailable, activeStrategy, scenario, isCustomScenario, difficulty]
   );
 
   // Send turn
@@ -246,6 +249,7 @@ export default function Home() {
           type: "turn",
           scenario,
           strategyId: activeStrategy.id,
+          difficulty,
           turnNumber: currentTurn,
           totalTurns: TOTAL_TURNS,
           messages: newMessages,
@@ -297,6 +301,8 @@ export default function Home() {
           strategyLabel: activeStrategy.label,
           strategyDescription: activeStrategy.description,
           isCustomScenario,
+          difficulty,
+          difficultyLabel: DIFFICULTIES.find((d) => d.id === difficulty)?.label ?? "Medium",
           messages: finalMessages,
         }),
       });
@@ -389,6 +395,7 @@ export default function Home() {
     setMomentumHistory([50]);
     setDebrief(null);
     setActiveStrategy(null);
+    setDifficulty("medium");
     setActiveDrillType(null);
     setError(null);
     setUserInput("");
@@ -565,6 +572,31 @@ export default function Home() {
               </div>
             </section>
 
+            {/* Difficulty */}
+            <section className="space-y-3">
+              <label className="text-xs font-mono text-muted tracking-wider uppercase block">
+                Difficulty
+              </label>
+              <div className="flex gap-2">
+                {DIFFICULTIES.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => setDifficulty(d.id)}
+                    className={`flex-1 px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                      difficulty === d.id
+                        ? "bg-accent text-white border-accent"
+                        : "border-subtle text-muted hover:border-muted"
+                    }`}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-muted">
+                {DIFFICULTIES.find((d) => d.id === difficulty)?.description}
+              </p>
+            </section>
+
             {/* How this works (collapsible) */}
             <details className="group">
               <summary className="text-xs font-mono text-muted tracking-wider uppercase cursor-pointer hover:text-gray-400 transition-colors flex items-center gap-1.5">
@@ -732,6 +764,17 @@ export default function Home() {
                     </p>
                   </>
                 )}
+                <div className="flex justify-center mt-2">
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                    difficulty === "easy"
+                      ? "bg-emerald-400/15 text-emerald-400"
+                      : difficulty === "hard"
+                        ? "bg-red-400/15 text-red-400"
+                        : "bg-amber-400/15 text-amber-400"
+                  }`}>
+                    {DIFFICULTIES.find((d) => d.id === difficulty)?.label}
+                  </span>
+                </div>
               </div>
 
               {/* Turn-by-turn timeline */}

@@ -48,7 +48,7 @@ ${strategyFragment}
 Respond with ONLY a JSON object: {"message": "your response here"}`;
 }
 
-export function buildMomentumPrompt(scenario: string): string {
+export function buildMomentumPrompt(scenario: string, difficultyLabel?: string): string {
   return `You are an independent negotiation analyst. You evaluate the current balance of power in a negotiation.
 
 <scenario>
@@ -69,6 +69,7 @@ Analyze the most recent exchange in context of the full conversation. Consider:
 - Has either party made unnecessary concessions?
 - Who is controlling the frame of the negotiation?
 - Is either party being backed into a corner?
+${difficultyLabel ? `The opponent is playing on ${difficultyLabel} difficulty. Factor this into your assessment — holding ground against a Hard opponent is more impressive than the same against an Easy one.` : ''}
 
 Score from 0 to 100:
 - 0 = the opponent completely dominates
@@ -124,8 +125,18 @@ export function buildDebriefPrompt(
   strategyLabel: string,
   strategyDescription: string,
   isCustomScenario: boolean,
-  difficultyLabel?: string
+  difficultyLabel?: string,
+  prepPlan?: { batna: string; walkAway: string; openingStrategy: string }
 ): string {
+  const hasPrepPlan = prepPlan && (prepPlan.batna.trim() || prepPlan.walkAway.trim() || prepPlan.openingStrategy.trim());
+  const prepPlanBlock = hasPrepPlan ? `
+<user_prep_plan>
+Before the negotiation, the user defined the following plan:
+${prepPlan.batna.trim() ? `BATNA: ${prepPlan.batna}` : ''}
+${prepPlan.walkAway.trim() ? `Walk-away point: ${prepPlan.walkAway}` : ''}
+${prepPlan.openingStrategy.trim() ? `Opening strategy: ${prepPlan.openingStrategy}` : ''}
+</user_prep_plan>
+` : '';
   return `You are an expert negotiation coach providing a post-game analysis. You are direct, specific, and actionable. No fluff.
 
 <scenario>
@@ -135,8 +146,7 @@ ${scenario}
 <opponent_strategy>
 ${difficultyLabel ? `Difficulty: ${difficultyLabel}. ` : ''}The opponent was using the "${strategyLabel}" strategy: ${strategyDescription}
 </opponent_strategy>
-
-<instructions>
+${prepPlanBlock}<instructions>
 Analyze the full negotiation transcript. Provide:
 
 1. An overall score from 0-100 based on:
@@ -146,6 +156,7 @@ Analyze the full negotiation transcript. Provide:
    - Concession management — did they give too much too fast? (15%)
    - Closing strength — did they end with a clear, favorable position? (10%)
    ${isCustomScenario ? "- For this custom scenario, score based on general negotiation principles." : ""}
+   ${difficultyLabel ? `- Difficulty calibration: The opponent was on ${difficultyLabel} difficulty. Adjust scoring accordingly — a solid performance against Hard deserves a higher score than the same performance against Easy.` : ''}
 
 2. For each of the 6 exchanges (user message + opponent response), write ONE annotation sentence. Be specific about what happened in that turn. Examples of good annotations:
    - "Strong opening — stated value before making the ask."
@@ -190,13 +201,20 @@ Format each annotation as "Turn N: [annotation text]"
       "detail": "Explanation referencing a specific turn",
       "turnNumber": NUMBER
     }
-  ]
+  ]${hasPrepPlan ? `,
+  "planAdherence": {
+    "score": <number 0-100>,
+    "assessment": "<2-3 sentences on how well they stuck to their plan>",
+    "stuckTo": ["<what they followed from their plan>"],
+    "deviations": ["<where they deviated and whether it was smart or weak>"]
+  }` : ''}
 }
 
 Additional field instructions:
 - tacticsUsed: List 2-4 specific negotiation tactics the user employed. Name the tactic and cite the turn. If the user didn't employ any recognizable tactics, return an empty array.
 - missedOpportunities: List 1-3 things the user could have done differently. Be specific — reference actual turns and what could have been said or done.
-- languageFlags: Identify 2-4 notable language patterns. Mix of positive and negative. Each must reference a specific turn. Types: hedging (weak language), assertive (strong language), emotional (anger/frustration/flattery), vague (unspecific proposals), specific (concrete numbers/terms).
+- languageFlags: Identify 2-4 notable language patterns. Mix of positive and negative. Each must reference a specific turn. Types: hedging (weak language), assertive (strong language), emotional (anger/frustration/flattery), vague (unspecific proposals), specific (concrete numbers/terms).${hasPrepPlan ? `
+- planAdherence: ONLY include this field if a user prep plan was provided above. Score 0-100 on how well they followed their own stated plan. 80+ means they stuck to it effectively. Under 40 means they abandoned their plan. Note: deviating from a plan can be GOOD if the user adapted intelligently to new information. Distinguish between smart pivots and weak capitulation.` : ''}
 - Keep total output under 400 tokens. The existing fields keep their current constraints.
 </rules>`;
 }

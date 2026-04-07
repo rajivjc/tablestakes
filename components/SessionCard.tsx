@@ -147,6 +147,18 @@ export default function SessionCard({ session }: SessionCardProps) {
             </div>
           )}
 
+          {/* Plan Adherence */}
+          {session.planAdherence && (
+            <div className="space-y-2 pt-2 border-t border-subtle">
+              <p className="text-xs font-mono text-muted tracking-wider uppercase">
+                Plan Adherence: <span className={scoreColor(session.planAdherence.score)}>{session.planAdherence.score}</span>
+              </p>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                {session.planAdherence.assessment}
+              </p>
+            </div>
+          )}
+
           {/* Language Flags */}
           {session.debrief.languageFlags.length > 0 && (
             <div>

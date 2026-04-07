@@ -37,6 +37,17 @@ export interface SessionResult {
     name: string;
   };
   difficulty?: Difficulty;
+  prepPlan?: {
+    batna: string;
+    walkAway: string;
+    openingStrategy: string;
+  };
+  planAdherence?: {
+    score: number;
+    assessment: string;
+    stuckTo: string[];
+    deviations: string[];
+  };
   score: number;
   momentum: number[];
   turns: TurnRecord[];

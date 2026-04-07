@@ -13,6 +13,7 @@ import {
   type Annotation,
 } from "@/lib/storage";
 import { type DrillType } from "@/lib/drillScenarios";
+import { getRandomCurveball, getCurveballTurn, type Curveball } from "@/lib/curveballs";
 import MomentumMeter from "@/components/MomentumMeter";
 import ChatBubble, { TypingIndicator } from "@/components/ChatBubble";
 import ScoreDial from "@/components/ScoreDial";
@@ -85,6 +86,10 @@ export default function Home() {
 
   // Prep plan state
   const [prepPlan, setPrepPlan] = useState<PrepPlan | null>(null);
+
+  // Curveball state (Hard difficulty only)
+  const [curveball, setCurveball] = useState<Curveball | null>(null);
+  const [curveballTurn, setCurveballTurn] = useState<number | null>(null);
 
   // History state
   const [storageAvailable, setStorageAvailable] = useState(false);
@@ -159,6 +164,14 @@ export default function Home() {
     setMomentum(50);
     setMomentumHistory([50]);
     setError(null);
+
+    if (difficulty === "hard") {
+      setCurveball(getRandomCurveball());
+      setCurveballTurn(getCurveballTurn());
+    } else {
+      setCurveball(null);
+      setCurveballTurn(null);
+    }
   };
 
   // Save session to localStorage
@@ -220,6 +233,7 @@ export default function Home() {
         difficulty,
         ...(hasPrepContent ? { prepPlan } : {}),
         ...(debriefData.planAdherence ? { planAdherence: debriefData.planAdherence } : {}),
+        ...(curveball ? { curveballLabel: curveball.label, curveballTurn: curveballTurn ?? undefined } : {}),
         score: debriefData.overallScore,
         momentum: momentumValues,
         turns,
@@ -238,7 +252,7 @@ export default function Home() {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     },
-    [storageAvailable, activeStrategy, scenario, isCustomScenario, difficulty, prepPlan]
+    [storageAvailable, activeStrategy, scenario, isCustomScenario, difficulty, prepPlan, curveball, curveballTurn]
   );
 
   // Send turn
@@ -270,6 +284,7 @@ export default function Home() {
           turnNumber: currentTurn,
           totalTurns: TOTAL_TURNS,
           messages: newMessages,
+          ...(curveball && curveballTurn === currentTurn ? { curveballInstruction: curveball.promptInstruction } : {}),
         }),
       });
 
@@ -300,7 +315,7 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [userInput, isLoading, activeStrategy, turnNumber, messages, scenario]);
+  }, [userInput, isLoading, activeStrategy, turnNumber, messages, scenario, curveball, curveballTurn]);
 
   // Request debrief
   const requestDebrief = async (finalMessages: Message[]) => {
@@ -321,6 +336,7 @@ export default function Home() {
           difficulty,
           messages: finalMessages,
           ...(prepPlan && (prepPlan.batna.trim() || prepPlan.walkAway.trim() || prepPlan.openingStrategy.trim()) ? { prepPlan } : {}),
+          ...(curveball ? { curveballLabel: curveball.label } : {}),
         }),
       });
 
@@ -415,6 +431,8 @@ export default function Home() {
     setDifficulty("medium");
     setActiveDrillType(null);
     setPrepPlan(null);
+    setCurveball(null);
+    setCurveballTurn(null);
     setError(null);
     setUserInput("");
   };
@@ -701,16 +719,24 @@ export default function Home() {
               )}
 
               {messages.map((msg, i) => (
-                <ChatBubble
-                  key={i}
-                  role={msg.role}
-                  content={msg.content}
-                  turnLabel={
-                    msg.role === "user"
-                      ? `You · Turn ${Math.floor(i / 2) + 1}`
-                      : "Opponent"
-                  }
-                />
+                <div key={i}>
+                  <ChatBubble
+                    role={msg.role}
+                    content={msg.content}
+                    turnLabel={
+                      msg.role === "user"
+                        ? `You · Turn ${Math.floor(i / 2) + 1}`
+                        : "Opponent"
+                    }
+                  />
+                  {msg.role === "assistant" && curveball && curveballTurn === Math.floor(i / 2) + 1 && (
+                    <div className="flex justify-start mb-3">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-400/15 text-red-400 tracking-wider uppercase">
+                        Curveball: {curveball.label}
+                      </span>
+                    </div>
+                  )}
+                </div>
               ))}
 
               {isLoading && <TypingIndicator />}
@@ -800,7 +826,7 @@ export default function Home() {
                     </p>
                   </>
                 )}
-                <div className="flex justify-center mt-2">
+                <div className="flex justify-center mt-2 gap-2">
                   <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
                     difficulty === "easy"
                       ? "bg-emerald-400/15 text-emerald-400"
@@ -810,6 +836,11 @@ export default function Home() {
                   }`}>
                     {DIFFICULTIES.find((d) => d.id === difficulty)?.label}
                   </span>
+                  {curveball && (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-red-400/15 text-red-400">
+                      Curveball: {curveball.label}
+                    </span>
+                  )}
                 </div>
               </div>
 

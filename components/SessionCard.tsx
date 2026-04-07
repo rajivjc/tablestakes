@@ -68,6 +68,11 @@ export default function SessionCard({ session }: SessionCardProps) {
                 {session.difficulty === "easy" ? "Easy" : session.difficulty === "hard" ? "Hard" : "Medium"}
               </span>
             )}
+            {session.curveballLabel && (
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-red-400/15 text-red-400">
+                {session.curveballLabel}
+              </span>
+            )}
             <span className="text-[10px] text-subtle">
               {formatRelativeDate(session.timestamp)}
             </span>

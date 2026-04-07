@@ -56,6 +56,7 @@ export default function PrepScreen({ onStart, onBack }: PrepScreenProps) {
           onChange={(e) => setBatna(e.target.value)}
           placeholder="e.g., I have another offer at $150K..."
           rows={2}
+          maxLength={500}
           className="w-full bg-surface-raised border border-subtle rounded-lg px-4 py-3 text-sm text-gray-200 placeholder:text-subtle focus:outline-none focus:border-accent/50 resize-none"
         />
       </section>
@@ -73,6 +74,7 @@ export default function PrepScreen({ onStart, onBack }: PrepScreenProps) {
           onChange={(e) => setWalkAway(e.target.value)}
           placeholder="e.g., I won't accept less than $140K base..."
           rows={2}
+          maxLength={500}
           className="w-full bg-surface-raised border border-subtle rounded-lg px-4 py-3 text-sm text-gray-200 placeholder:text-subtle focus:outline-none focus:border-accent/50 resize-none"
         />
       </section>
@@ -90,6 +92,7 @@ export default function PrepScreen({ onStart, onBack }: PrepScreenProps) {
           onChange={(e) => setOpeningStrategy(e.target.value)}
           placeholder="e.g., Open with $170K anchored to market data..."
           rows={2}
+          maxLength={500}
           className="w-full bg-surface-raised border border-subtle rounded-lg px-4 py-3 text-sm text-gray-200 placeholder:text-subtle focus:outline-none focus:border-accent/50 resize-none"
         />
       </section>

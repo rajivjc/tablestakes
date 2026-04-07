@@ -10,6 +10,7 @@ import { parseResponse, parseDebriefResponse, parseDrillResponse } from "@/lib/p
 import { checkRateLimit, incrementRateLimit, checkRequestRateLimit, incrementRequestRateLimit } from "@/lib/rateLimit";
 import { validateInput, redactPII } from "@/lib/security";
 import { getStrategyById } from "@/lib/strategies";
+import { getDifficultyById } from "@/lib/difficulty";
 import { DRILL_SCENARIOS } from "@/lib/drillScenarios";
 
 const client = new Anthropic();
@@ -25,6 +26,7 @@ interface TurnRequest {
   type: "turn";
   scenario: string;
   strategyId: string;
+  difficulty: string;
   turnNumber: number;
   totalTurns: number;
   messages: Message[];
@@ -37,6 +39,8 @@ interface DebriefRequest {
   strategyLabel: string;
   strategyDescription: string;
   isCustomScenario: boolean;
+  difficulty: string;
+  difficultyLabel: string;
   messages: Message[];
 }
 
@@ -149,6 +153,9 @@ async function handleTurn(body: TurnRequest, ip: string) {
     );
   }
 
+  // Resolve difficulty (default to medium if not found)
+  const difficulty = getDifficultyById(body.difficulty) ?? getDifficultyById("medium")!;
+
   // Validate conversation history length
   const expectedLength = (body.turnNumber - 1) * 2 + 1;
   if (body.messages.length !== expectedLength) {
@@ -199,7 +206,8 @@ async function handleTurn(body: TurnRequest, ip: string) {
         body.scenario,
         strategy.promptFragment,
         body.turnNumber,
-        body.totalTurns
+        body.totalTurns,
+        difficulty.promptModifier
       ),
       messages: wrappedMessages,
     }),
@@ -263,7 +271,8 @@ async function handleDebrief(body: DebriefRequest, ip: string) {
       body.scenario,
       body.strategyLabel,
       body.strategyDescription,
-      body.isCustomScenario
+      body.isCustomScenario,
+      body.difficultyLabel
     ),
     messages: [
       {

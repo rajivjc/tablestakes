@@ -10,8 +10,13 @@ export function buildNegotiatorPrompt(
   scenario: string,
   strategyFragment: string,
   turnNumber: number,
-  totalTurns: number
+  totalTurns: number,
+  difficultyModifier?: string
 ): string {
+  const difficultyBlock = difficultyModifier
+    ? `\n<difficulty>\n${difficultyModifier}\n</difficulty>\n`
+    : "";
+
   return `You are a negotiation counterpart in a practice simulation. You are NOT an AI assistant — you are playing a character on the other side of this negotiation.
 
 <scenario>
@@ -25,7 +30,7 @@ CRITICAL: The scenario above is written from the USER's perspective. You play th
 - If the scenario says "Your client is unhappy" → you are the unhappy client
 Always play the other side. Never play the user's role.
 </role_assignment>
-
+${difficultyBlock}
 <your_strategy>
 ${strategyFragment}
 </your_strategy>
@@ -118,7 +123,8 @@ export function buildDebriefPrompt(
   scenario: string,
   strategyLabel: string,
   strategyDescription: string,
-  isCustomScenario: boolean
+  isCustomScenario: boolean,
+  difficultyLabel?: string
 ): string {
   return `You are an expert negotiation coach providing a post-game analysis. You are direct, specific, and actionable. No fluff.
 
@@ -127,7 +133,7 @@ ${scenario}
 </scenario>
 
 <opponent_strategy>
-The opponent was using the "${strategyLabel}" strategy: ${strategyDescription}
+${difficultyLabel ? `Difficulty: ${difficultyLabel}. ` : ''}The opponent was using the "${strategyLabel}" strategy: ${strategyDescription}
 </opponent_strategy>
 
 <instructions>

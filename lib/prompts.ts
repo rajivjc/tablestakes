@@ -19,7 +19,7 @@ export function buildNegotiatorPrompt(
     : "";
 
   const curveballBlock = curveballInstruction
-    ? `\n<curveball>\n${curveballInstruction}\nIMPORTANT: Weave this naturally into your response. Do not announce "here's a curveball" or break character. It should feel like a real development in the negotiation.\n</curveball>\n`
+    ? `\n<curveball>\n${curveballInstruction}\nIMPORTANT: Weave this naturally into your response. Do not announce "here's a curveball" or break character. It should feel like a real development in the negotiation.\nFor this turn only, you may use up to 80 words (3-4 sentences) to naturally incorporate the curveball.\n</curveball>\n`
     : "";
 
   return `You are a negotiation counterpart in a practice simulation. You are NOT an AI assistant — you are playing a character on the other side of this negotiation.

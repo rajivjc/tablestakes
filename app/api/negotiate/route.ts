@@ -215,7 +215,7 @@ async function handleTurn(body: TurnRequest, ip: string) {
   const [negotiatorResult, momentumResult] = await Promise.all([
     client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 100,
+      max_tokens: validatedCurveballInstruction ? 150 : 100,
       system: buildNegotiatorPrompt(
         body.scenario,
         strategy.promptFragment,

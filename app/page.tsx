@@ -20,12 +20,20 @@ import TurnTimeline from "@/components/TurnTimeline";
 import HistoryScreen from "@/components/HistoryScreen";
 import DrillPicker from "@/components/DrillPicker";
 import DrillActive from "@/components/DrillActive";
+import PrepScreen, { type PrepPlan } from "@/components/PrepScreen";
 
 const TOTAL_TURNS = 6;
 
 interface Message {
   role: "user" | "assistant";
   content: string;
+}
+
+interface PlanAdherenceData {
+  score: number;
+  assessment: string;
+  stuckTo: string[];
+  deviations: string[];
 }
 
 interface DebriefData {
@@ -37,9 +45,10 @@ interface DebriefData {
   tacticsUsed: string[];
   missedOpportunities: string[];
   languageFlags: LanguageFlag[];
+  planAdherence?: PlanAdherenceData;
 }
 
-type Screen = "setup" | "negotiation" | "debrief" | "history" | "drill-picker" | "drill-active";
+type Screen = "setup" | "prep" | "negotiation" | "debrief" | "history" | "drill-picker" | "drill-active";
 
 export default function Home() {
   // Setup state
@@ -73,6 +82,9 @@ export default function Home() {
 
   // Drill state
   const [activeDrillType, setActiveDrillType] = useState<DrillType | null>(null);
+
+  // Prep plan state
+  const [prepPlan, setPrepPlan] = useState<PrepPlan | null>(null);
 
   // History state
   const [storageAvailable, setStorageAvailable] = useState(false);
@@ -190,6 +202,9 @@ export default function Home() {
       // Momentum values (skip initial 50)
       const momentumValues = momHistory.slice(1);
 
+      // Determine if prep plan has content
+      const hasPrepContent = prepPlan && (prepPlan.batna.trim() || prepPlan.walkAway.trim() || prepPlan.openingStrategy.trim());
+
       const result: SessionResult = {
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
@@ -203,6 +218,8 @@ export default function Home() {
           name: activeStrategy.label,
         },
         difficulty,
+        ...(hasPrepContent ? { prepPlan } : {}),
+        ...(debriefData.planAdherence ? { planAdherence: debriefData.planAdherence } : {}),
         score: debriefData.overallScore,
         momentum: momentumValues,
         turns,
@@ -221,7 +238,7 @@ export default function Home() {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000);
     },
-    [storageAvailable, activeStrategy, scenario, isCustomScenario, difficulty]
+    [storageAvailable, activeStrategy, scenario, isCustomScenario, difficulty, prepPlan]
   );
 
   // Send turn
@@ -302,8 +319,8 @@ export default function Home() {
           strategyDescription: activeStrategy.description,
           isCustomScenario,
           difficulty,
-          difficultyLabel: DIFFICULTIES.find((d) => d.id === difficulty)?.label ?? "Medium",
           messages: finalMessages,
+          ...(prepPlan && (prepPlan.batna.trim() || prepPlan.walkAway.trim() || prepPlan.openingStrategy.trim()) ? { prepPlan } : {}),
         }),
       });
 
@@ -397,6 +414,7 @@ export default function Home() {
     setActiveStrategy(null);
     setDifficulty("medium");
     setActiveDrillType(null);
+    setPrepPlan(null);
     setError(null);
     setUserInput("");
   };
@@ -433,7 +451,7 @@ export default function Home() {
           </button>
 
           <div className="flex items-center gap-3">
-            {screen !== "setup" && screen !== "history" && screen !== "drill-picker" && screen !== "drill-active" && (
+            {screen !== "setup" && screen !== "prep" && screen !== "history" && screen !== "drill-picker" && screen !== "drill-active" && (
               <button
                 onClick={resetGame}
                 className="text-xs font-mono text-muted hover:text-accent transition-colors tracking-wide uppercase"
@@ -625,11 +643,18 @@ export default function Home() {
             {/* Start buttons */}
             <div className="space-y-3">
               <button
-                onClick={startNegotiation}
+                onClick={() => { if (scenario.trim()) setScreen("prep"); }}
                 disabled={!scenario.trim()}
                 className="btn-primary w-full py-3.5 rounded-lg text-sm tracking-wide"
               >
-                Start Negotiation
+                Start with Prep
+              </button>
+              <button
+                onClick={() => { setPrepPlan(null); startNegotiation(); }}
+                disabled={!scenario.trim()}
+                className="w-full py-3.5 rounded-lg text-sm tracking-wide text-muted border border-subtle hover:border-muted hover:text-gray-200 transition-colors"
+              >
+                Skip to Negotiation
               </button>
               <button
                 onClick={startDrillPicker}
@@ -639,6 +664,17 @@ export default function Home() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* ── SCREEN: PREP ── */}
+        {screen === "prep" && (
+          <PrepScreen
+            onStart={(plan) => {
+              setPrepPlan(plan);
+              startNegotiation();
+            }}
+            onBack={() => setScreen("setup")}
+          />
         )}
 
         {/* ── SCREEN 2: NEGOTIATION ── */}
@@ -794,6 +830,55 @@ export default function Home() {
                   {debrief.keyTakeaway}
                 </p>
               </section>
+
+              {/* Plan Adherence */}
+              {debrief.planAdherence && (
+                <section className="space-y-4">
+                  <h2 className="text-xs font-mono text-muted tracking-wider uppercase">
+                    Plan Adherence
+                  </h2>
+                  <div className="text-center">
+                    <p className={`text-3xl font-display font-bold ${
+                      debrief.planAdherence.score >= 70 ? 'text-emerald-400' :
+                      debrief.planAdherence.score >= 40 ? 'text-amber-400' : 'text-red-400'
+                    }`}>
+                      {debrief.planAdherence.score}
+                    </p>
+                    <p className="text-[10px] font-mono text-muted tracking-wider uppercase mt-1">
+                      Plan Score
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-300 leading-relaxed text-center">
+                    {debrief.planAdherence.assessment}
+                  </p>
+                  {debrief.planAdherence.stuckTo.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-mono text-emerald-400/80 tracking-wider uppercase">
+                        Stuck to plan
+                      </p>
+                      {debrief.planAdherence.stuckTo.map((point, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                          <span className="text-emerald-400 mt-0.5 shrink-0">&#10003;</span>
+                          <span>{point}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {debrief.planAdherence.deviations.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-mono text-amber-400/80 tracking-wider uppercase">
+                        Deviations
+                      </p>
+                      {debrief.planAdherence.deviations.map((point, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm text-gray-400">
+                          <span className="text-amber-400 mt-0.5 shrink-0">&nearr;</span>
+                          <span>{point}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
 
               {/* Tactics Used */}
               {debrief.tacticsUsed && debrief.tacticsUsed.length > 0 && (

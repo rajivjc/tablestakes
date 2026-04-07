@@ -59,6 +59,16 @@ export function parseDrillResponse(raw: string): ParsedDrillResponse | null {
 }
 
 /**
+ * Plan adherence data from debrief when prep plan was provided.
+ */
+export interface PlanAdherence {
+  score: number;
+  assessment: string;
+  stuckTo: string[];
+  deviations: string[];
+}
+
+/**
  * Extended debrief response with new Phase 1 fields.
  */
 export interface ParsedDebrief {
@@ -68,6 +78,7 @@ export interface ParsedDebrief {
   tacticsUsed: string[];
   missedOpportunities: string[];
   languageFlags: ParsedLanguageFlag[];
+  planAdherence?: PlanAdherence;
 }
 
 /**
@@ -88,5 +99,19 @@ export function parseDebriefResponse(raw: string): ParsedDebrief | null {
           (f) => f && typeof f.type === 'string' && typeof f.detail === 'string'
         )
       : [],
+    planAdherence: parsed.planAdherence && typeof (parsed.planAdherence as Record<string, unknown>).score === 'number'
+      ? {
+          score: Math.max(0, Math.min(100, (parsed.planAdherence as Record<string, unknown>).score as number)),
+          assessment: typeof (parsed.planAdherence as Record<string, unknown>).assessment === 'string'
+            ? (parsed.planAdherence as Record<string, unknown>).assessment as string
+            : '',
+          stuckTo: Array.isArray((parsed.planAdherence as Record<string, unknown>).stuckTo)
+            ? ((parsed.planAdherence as Record<string, unknown>).stuckTo as string[]).slice(0, 3)
+            : [],
+          deviations: Array.isArray((parsed.planAdherence as Record<string, unknown>).deviations)
+            ? ((parsed.planAdherence as Record<string, unknown>).deviations as string[]).slice(0, 3)
+            : [],
+        }
+      : undefined,
   };
 }

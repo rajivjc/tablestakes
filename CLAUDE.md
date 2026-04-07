@@ -12,7 +12,7 @@ Multi-turn negotiation simulator + targeted drill trainer. User practices negoti
 - localStorage for session history (negotiations + drills, separate keys)
 
 ## Architecture
-Single-page app with 6 state-driven screens (Setup → Negotiation → Debrief → History, plus Drill Picker → Drill Active). One API route at `/api/negotiate` handles all AI calls via `type` field: `"turn"`, `"debrief"`, `"drill"`. Difficulty tiers (Easy/Medium/Hard) modify opponent behavior independently of strategy.
+Single-page app with 7 state-driven screens (Setup → Prep (optional) → Negotiation → Debrief → History, plus Drill Picker → Drill Active). One API route at `/api/negotiate` handles all AI calls via `type` field: `"turn"`, `"debrief"`, `"drill"`. Difficulty tiers (Easy/Medium/Hard) modify opponent behavior independently of strategy. Pre-negotiation prep mode lets users define BATNA, walk-away point, and opening strategy before negotiating; the debrief grades plan adherence if prep was provided.
 
 **Per negotiation turn (2 parallel calls):**
 1. Negotiator — plays the opponent in character
@@ -37,6 +37,7 @@ Single-page app with 6 state-driven screens (Setup → Negotiation → Debrief �
 - `lib/rateLimit.ts` — IP (15/day) + global (500/day) rate limiting
 - `app/api/negotiate/route.ts` — single POST endpoint (turn, debrief, drill handlers)
 - `app/page.tsx` — main SPA (all 6 screens)
+- `components/PrepScreen.tsx` — pre-negotiation prep plan input (BATNA, walk-away, opening strategy)
 - `components/` — MomentumMeter, ScoreDial, ChatBubble, TurnTimeline, HistoryScreen (tabbed: Negotiations/Drills), ScoreTrend, StatsRow, PatternInsights, SessionCard, DrillPicker, DrillActive, DrillHistory
 
 ## Design DNA

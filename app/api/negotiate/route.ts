@@ -10,7 +10,7 @@ import { parseResponse, parseDebriefResponse, parseDrillResponse } from "@/lib/p
 import { checkRateLimit, incrementRateLimit, checkRequestRateLimit, incrementRequestRateLimit } from "@/lib/rateLimit";
 import { validateInput, redactPII } from "@/lib/security";
 import { getStrategyById } from "@/lib/strategies";
-import { getDifficultyById } from "@/lib/difficulty";
+import { getDifficultyById, type Difficulty } from "@/lib/difficulty";
 import { DRILL_SCENARIOS } from "@/lib/drillScenarios";
 
 const client = new Anthropic();
@@ -26,7 +26,7 @@ interface TurnRequest {
   type: "turn";
   scenario: string;
   strategyId: string;
-  difficulty: string;
+  difficulty: Difficulty;
   turnNumber: number;
   totalTurns: number;
   messages: Message[];
@@ -39,9 +39,13 @@ interface DebriefRequest {
   strategyLabel: string;
   strategyDescription: string;
   isCustomScenario: boolean;
-  difficulty: string;
-  difficultyLabel: string;
+  difficulty: Difficulty;
   messages: Message[];
+  prepPlan?: {
+    batna: string;
+    walkAway: string;
+    openingStrategy: string;
+  };
 }
 
 interface DrillRequest {
@@ -214,7 +218,7 @@ async function handleTurn(body: TurnRequest, ip: string) {
     client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 50,
-      system: buildMomentumPrompt(body.scenario),
+      system: buildMomentumPrompt(body.scenario, difficulty.label),
       messages: wrappedMessages,
     }),
   ]);
@@ -256,6 +260,26 @@ async function handleDebrief(body: DebriefRequest, ip: string) {
     );
   }
   incrementRequestRateLimit(ip);
+
+  // Resolve difficulty server-side
+  const difficulty = getDifficultyById(body.difficulty) ?? getDifficultyById("medium")!;
+
+  // Validate prep plan fields if provided
+  const prepPlan = body.prepPlan;
+  if (prepPlan) {
+    for (const field of [prepPlan.batna, prepPlan.walkAway, prepPlan.openingStrategy]) {
+      if (field && field.trim()) {
+        const check = validateInput(field);
+        if (!check.valid) {
+          return NextResponse.json({ error: check.reason }, { status: 400 });
+        }
+      }
+    }
+  }
+
+  // Determine if prep plan has content
+  const hasPrepContent = prepPlan && (prepPlan.batna.trim() || prepPlan.walkAway.trim() || prepPlan.openingStrategy.trim());
+
   // Build conversation for debrief
   const conversationText = body.messages
     .map(
@@ -272,7 +296,8 @@ async function handleDebrief(body: DebriefRequest, ip: string) {
       body.strategyLabel,
       body.strategyDescription,
       body.isCustomScenario,
-      body.difficultyLabel
+      difficulty.label,
+      hasPrepContent ? prepPlan : undefined
     ),
     messages: [
       {
@@ -304,6 +329,7 @@ async function handleDebrief(body: DebriefRequest, ip: string) {
     tacticsUsed: debriefParsed.tacticsUsed,
     missedOpportunities: debriefParsed.missedOpportunities,
     languageFlags: debriefParsed.languageFlags,
+    planAdherence: debriefParsed.planAdherence,
   });
 }
 

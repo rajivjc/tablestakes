@@ -11,10 +11,15 @@ export function buildNegotiatorPrompt(
   strategyFragment: string,
   turnNumber: number,
   totalTurns: number,
-  difficultyModifier?: string
+  difficultyModifier?: string,
+  curveballInstruction?: string
 ): string {
   const difficultyBlock = difficultyModifier
     ? `\n<difficulty>\n${difficultyModifier}\n</difficulty>\n`
+    : "";
+
+  const curveballBlock = curveballInstruction
+    ? `\n<curveball>\n${curveballInstruction}\nIMPORTANT: Weave this naturally into your response. Do not announce "here's a curveball" or break character. It should feel like a real development in the negotiation.\n</curveball>\n`
     : "";
 
   return `You are a negotiation counterpart in a practice simulation. You are NOT an AI assistant — you are playing a character on the other side of this negotiation.
@@ -30,7 +35,7 @@ CRITICAL: The scenario above is written from the USER's perspective. You play th
 - If the scenario says "Your client is unhappy" → you are the unhappy client
 Always play the other side. Never play the user's role.
 </role_assignment>
-${difficultyBlock}
+${difficultyBlock}${curveballBlock}
 <your_strategy>
 ${strategyFragment}
 </your_strategy>
@@ -126,7 +131,8 @@ export function buildDebriefPrompt(
   strategyDescription: string,
   isCustomScenario: boolean,
   difficultyLabel?: string,
-  prepPlan?: { batna: string; walkAway: string; openingStrategy: string }
+  prepPlan?: { batna: string; walkAway: string; openingStrategy: string },
+  curveballLabel?: string
 ): string {
   const hasPrepPlan = prepPlan && (prepPlan.batna.trim() || prepPlan.walkAway.trim() || prepPlan.openingStrategy.trim());
   const prepPlanBlock = hasPrepPlan ? `
@@ -145,6 +151,7 @@ ${scenario}
 
 <opponent_strategy>
 ${difficultyLabel ? `Difficulty: ${difficultyLabel}. ` : ''}The opponent was using the "${strategyLabel}" strategy: ${strategyDescription}
+${curveballLabel ? `A curveball ("${curveballLabel}") was introduced during the negotiation.` : ''}
 </opponent_strategy>
 ${prepPlanBlock}<instructions>
 Analyze the full negotiation transcript. Provide:
@@ -157,6 +164,7 @@ Analyze the full negotiation transcript. Provide:
    - Closing strength — did they end with a clear, favorable position? (10%)
    ${isCustomScenario ? "- For this custom scenario, score based on general negotiation principles." : ""}
    ${difficultyLabel ? `- Difficulty calibration: The opponent was on ${difficultyLabel} difficulty. Adjust scoring accordingly — a solid performance against Hard deserves a higher score than the same performance against Easy.` : ''}
+   ${curveballLabel ? `- Curveball handling: A "${curveballLabel}" curveball was thrown. Evaluate how well the user adapted — did they recognize the shift, adjust their approach, or get thrown off?` : ''}
 
 2. For each of the 6 exchanges (user message + opponent response), write ONE annotation sentence. Be specific about what happened in that turn. Examples of good annotations:
    - "Strong opening — stated value before making the ask."
@@ -215,6 +223,6 @@ Additional field instructions:
 - missedOpportunities: List 1-3 things the user could have done differently. Be specific — reference actual turns and what could have been said or done.
 - languageFlags: Identify 2-4 notable language patterns. Mix of positive and negative. Each must reference a specific turn. Types: hedging (weak language), assertive (strong language), emotional (anger/frustration/flattery), vague (unspecific proposals), specific (concrete numbers/terms).${hasPrepPlan ? `
 - planAdherence: ONLY include this field if a user prep plan was provided above. Score 0-100 on how well they followed their own stated plan. 80+ means they stuck to it effectively. Under 40 means they abandoned their plan. Note: deviating from a plan can be GOOD if the user adapted intelligently to new information. Distinguish between smart pivots and weak capitulation.` : ''}
-- Keep total output under 400 tokens. The existing fields keep their current constraints.
+- Keep total output under 600 tokens. The existing fields keep their current constraints.
 </rules>`;
 }

@@ -14,6 +14,8 @@ Multi-turn negotiation simulator + targeted drill trainer. User practices negoti
 ## Architecture
 Single-page app with 7 state-driven screens (Setup → Prep (optional) → Negotiation → Debrief → History, plus Drill Picker → Drill Active). One API route at `/api/negotiate` handles all AI calls via `type` field: `"turn"`, `"debrief"`, `"drill"`. Difficulty tiers (Easy/Medium/Hard) modify opponent behavior independently of strategy. Pre-negotiation prep mode lets users define BATNA, walk-away point, and opening strategy before negotiating; the debrief grades plan adherence if prep was provided.
 
+On Hard difficulty, a curveball (sudden new information) is injected on turn 3 or 4 to test adaptability.
+
 **Per negotiation turn (2 parallel calls):**
 1. Negotiator — plays the opponent in character
 2. Momentum — independent evaluator, returns score 0-100
@@ -30,13 +32,14 @@ Single-page app with 7 state-driven screens (Setup → Prep (optional) → Negot
 - `lib/strategies.ts` — 4 strategy definitions with behavioral prompt fragments
 - `lib/scenarios.ts` — 3 preset negotiation scenarios
 - `lib/drillScenarios.ts` — 16 drill scenarios (4 types × 4 each), types, random selection helper
+- `lib/curveballs.ts` — 6 curveball types for Hard difficulty, random selection helpers
 - `lib/storage.ts` — localStorage helpers for negotiation sessions + drill results (separate keys)
 - `lib/patterns.ts` — 8 pattern detection checks for negotiation history
 - `lib/parseResponse.ts` — JSON parsers with safe fallbacks (negotiator, debrief, drill)
 - `lib/security.ts` — injection detection, PII redaction, input validation
 - `lib/rateLimit.ts` — IP (15/day) + global (500/day) rate limiting
 - `app/api/negotiate/route.ts` — single POST endpoint (turn, debrief, drill handlers)
-- `app/page.tsx` — main SPA (all 6 screens)
+- `app/page.tsx` — main SPA (all 7 screens)
 - `components/PrepScreen.tsx` — pre-negotiation prep plan input (BATNA, walk-away, opening strategy)
 - `components/` — MomentumMeter, ScoreDial, ChatBubble, TurnTimeline, HistoryScreen (tabbed: Negotiations/Drills), ScoreTrend, StatsRow, PatternInsights, SessionCard, DrillPicker, DrillActive, DrillHistory
 

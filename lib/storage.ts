@@ -48,6 +48,8 @@ export interface SessionResult {
     stuckTo: string[];
     deviations: string[];
   };
+  curveballLabel?: string;
+  curveballTurn?: number;
   score: number;
   momentum: number[];
   turns: TurnRecord[];

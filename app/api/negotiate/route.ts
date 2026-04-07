@@ -12,6 +12,7 @@ import { validateInput, redactPII } from "@/lib/security";
 import { getStrategyById } from "@/lib/strategies";
 import { getDifficultyById, type Difficulty } from "@/lib/difficulty";
 import { DRILL_SCENARIOS } from "@/lib/drillScenarios";
+import { CURVEBALLS } from "@/lib/curveballs";
 
 const client = new Anthropic();
 
@@ -30,6 +31,7 @@ interface TurnRequest {
   turnNumber: number;
   totalTurns: number;
   messages: Message[];
+  curveballInstruction?: string;
 }
 
 interface DebriefRequest {
@@ -46,6 +48,7 @@ interface DebriefRequest {
     walkAway: string;
     openingStrategy: string;
   };
+  curveballLabel?: string;
 }
 
 interface DrillRequest {
@@ -189,6 +192,13 @@ async function handleTurn(body: TurnRequest, ip: string) {
     }
   }
 
+  // Validate curveball instruction if provided
+  let validatedCurveballInstruction: string | undefined;
+  if (body.curveballInstruction) {
+    const match = CURVEBALLS.find((c) => c.promptInstruction === body.curveballInstruction);
+    validatedCurveballInstruction = match ? match.promptInstruction : undefined;
+  }
+
   // Increment request count after all validation passes
   incrementRequestRateLimit(ip);
 
@@ -211,7 +221,8 @@ async function handleTurn(body: TurnRequest, ip: string) {
         strategy.promptFragment,
         body.turnNumber,
         body.totalTurns,
-        difficulty.promptModifier
+        difficulty.promptModifier,
+        validatedCurveballInstruction
       ),
       messages: wrappedMessages,
     }),
@@ -277,6 +288,13 @@ async function handleDebrief(body: DebriefRequest, ip: string) {
     }
   }
 
+  // Validate curveball label if provided
+  let validatedCurveballLabel: string | undefined;
+  if (body.curveballLabel) {
+    const match = CURVEBALLS.find((c) => c.label === body.curveballLabel);
+    validatedCurveballLabel = match ? match.label : undefined;
+  }
+
   // Determine if prep plan has content
   const hasPrepContent = prepPlan && (prepPlan.batna.trim() || prepPlan.walkAway.trim() || prepPlan.openingStrategy.trim());
 
@@ -290,14 +308,15 @@ async function handleDebrief(body: DebriefRequest, ip: string) {
 
   const debriefResult = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 800,
+    max_tokens: 1000,
     system: buildDebriefPrompt(
       body.scenario,
       body.strategyLabel,
       body.strategyDescription,
       body.isCustomScenario,
       difficulty.label,
-      hasPrepContent ? prepPlan : undefined
+      hasPrepContent ? prepPlan : undefined,
+      validatedCurveballLabel
     ),
     messages: [
       {

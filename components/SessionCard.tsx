@@ -53,7 +53,7 @@ export default function SessionCard({ session }: SessionCardProps) {
           <p className="text-sm text-gray-200 truncate">
             {session.scenario.title}
           </p>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-subtle/50 text-muted">
               {session.strategy.name}
             </span>
@@ -172,16 +172,20 @@ export default function SessionCard({ session }: SessionCardProps) {
               </p>
               <div className="space-y-1.5">
                 {session.debrief.languageFlags.map((flag, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span
-                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 ${flagBadgeColor[flag.type] || "bg-subtle/50 text-muted"}`}
-                    >
-                      {flag.label}
-                    </span>
-                    <span className="text-xs text-gray-400 leading-relaxed">
+                  <div key={i} className="bg-surface-overlay/30 rounded px-2.5 py-2 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${flagBadgeColor[flag.type] || "bg-subtle/50 text-muted"}`}
+                      >
+                        {flag.label}
+                      </span>
+                      <span className="text-[10px] font-mono text-subtle shrink-0">
+                        Turn {flag.turnNumber}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 leading-relaxed">
                       {flag.detail}
-                      <span className="text-subtle ml-1">Turn {flag.turnNumber}</span>
-                    </span>
+                    </p>
                   </div>
                 ))}
               </div>

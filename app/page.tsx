@@ -455,7 +455,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-dvh flex flex-col">
+    <main className="min-h-dvh flex flex-col overflow-x-hidden max-w-full">
       {/* Header - always visible */}
       <header className="sticky top-0 z-50 bg-surface/80 backdrop-blur-md border-b border-subtle/30">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
@@ -772,7 +772,7 @@ export default function Home() {
                     }
                     rows={2}
                     disabled={isLoading}
-                    className="flex-1 bg-surface-raised border border-subtle rounded-xl px-4 py-3 text-sm text-gray-200 placeholder:text-subtle focus:outline-none focus:border-accent/50 resize-none disabled:opacity-50"
+                    className="flex-1 min-w-0 bg-surface-raised border border-subtle rounded-xl px-4 py-3 text-sm text-gray-200 placeholder:text-subtle focus:outline-none focus:border-accent/50 resize-none disabled:opacity-50"
                   />
                   <button
                     onClick={sendTurn}
@@ -961,21 +961,21 @@ export default function Home() {
                     {debrief.languageFlags.map((flag, i) => (
                       <div
                         key={i}
-                        className="bg-surface-raised border border-subtle rounded-lg px-3 py-2.5 flex items-start gap-2.5"
+                        className="bg-surface-raised border border-subtle rounded-lg px-3 py-2.5 space-y-1.5"
                       >
-                        <span
-                          className={`text-[10px] font-mono px-1.5 py-0.5 rounded shrink-0 mt-0.5 ${flagBadgeColor[flag.type] || "bg-subtle/50 text-muted"}`}
-                        >
-                          {flag.label}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-sm text-gray-300 leading-relaxed">
-                            {flag.detail}
-                          </p>
-                          <p className="text-[10px] font-mono text-subtle mt-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span
+                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${flagBadgeColor[flag.type] || "bg-subtle/50 text-muted"}`}
+                          >
+                            {flag.label}
+                          </span>
+                          <span className="text-[10px] font-mono text-subtle shrink-0">
                             Turn {flag.turnNumber}
-                          </p>
+                          </span>
                         </div>
+                        <p className="text-sm text-gray-300 leading-relaxed">
+                          {flag.detail}
+                        </p>
                       </div>
                     ))}
                   </div>

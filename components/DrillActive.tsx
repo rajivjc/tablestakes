@@ -195,7 +195,7 @@ export default function DrillActive({ drillType, onBack, onBackToDrills }: Drill
               onKeyDown={handleKeyDown}
               placeholder={PLACEHOLDER_TEXT[drillType]}
               rows={3}
-              className="flex-1 bg-surface-raised border border-subtle rounded-xl px-4 py-3 text-sm text-gray-200 placeholder:text-subtle focus:outline-none focus:border-accent/50 resize-none"
+              className="flex-1 min-w-0 bg-surface-raised border border-subtle rounded-xl px-4 py-3 text-sm text-gray-200 placeholder:text-subtle focus:outline-none focus:border-accent/50 resize-none"
             />
             <button
               onClick={handleSubmit}

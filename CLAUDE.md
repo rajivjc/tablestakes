@@ -1,34 +1,42 @@
 # TableStakes — Claude Code Project Context
 
 ## What is this
-Multi-turn negotiation simulator. User practices negotiations against an AI opponent playing a hidden (or chosen) strategy. 6 fixed turns, momentum tracking, full debrief with score and annotations.
+Multi-turn negotiation simulator + targeted drill trainer. User practices negotiations against an AI opponent playing a hidden (or chosen) strategy. 6 fixed turns, momentum tracking, full debrief with score and annotations. Quick Drills offer 1-turn focused exercises on specific skills (anchoring, countering, walking away, reframing).
 
 ## Stack
 - Next.js 15.5.14, React 19, TypeScript
-- Anthropic API (Claude Haiku) — 13 calls per session
+- Anthropic API (Claude Haiku) — 13 calls per full negotiation session, 1 call per drill
 - Tailwind CSS (inline, no separate CSS files beyond globals.css)
 - Vercel deployment at tablestakes-sage.vercel.app
 - No database, no auth, no cookies
+- localStorage for session history (negotiations + drills, separate keys)
 
 ## Architecture
-Single-page app with 3 state-driven screens (Setup → Negotiation → Debrief). One API route at `/api/negotiate` handles all AI calls.
+Single-page app with 6 state-driven screens (Setup → Negotiation → Debrief → History, plus Drill Picker → Drill Active). One API route at `/api/negotiate` handles all AI calls via `type` field: `"turn"`, `"debrief"`, `"drill"`.
 
-**Per turn (2 parallel calls):**
+**Per negotiation turn (2 parallel calls):**
 1. Negotiator — plays the opponent in character
 2. Momentum — independent evaluator, returns score 0-100
 
 **After turn 6 (1 call):**
-3. Debrief — scores 0-100, 6 turn annotations, key takeaway
+3. Debrief — scores 0-100, 6 turn annotations, key takeaway, tactics, missed opportunities, language flags
+
+**Per drill (1 call):**
+4. Drill grader — scores 0-100, verdict, what worked, what to improve. Scenario content looked up server-side by scenarioId.
 
 ## Key files
-- `lib/prompts.ts` — all system prompts (negotiator, momentum, debrief)
+- `lib/prompts.ts` — all system prompts (negotiator, momentum, debrief, drill)
 - `lib/strategies.ts` — 4 strategy definitions with behavioral prompt fragments
-- `lib/scenarios.ts` — 3 preset scenarios
+- `lib/scenarios.ts` — 3 preset negotiation scenarios
+- `lib/drillScenarios.ts` — 16 drill scenarios (4 types × 4 each), types, random selection helper
+- `lib/storage.ts` — localStorage helpers for negotiation sessions + drill results (separate keys)
+- `lib/patterns.ts` — 8 pattern detection checks for negotiation history
+- `lib/parseResponse.ts` — JSON parsers with safe fallbacks (negotiator, debrief, drill)
 - `lib/security.ts` — injection detection, PII redaction, input validation
 - `lib/rateLimit.ts` — IP (15/day) + global (500/day) rate limiting
-- `app/api/negotiate/route.ts` — single POST endpoint
-- `app/page.tsx` — main SPA (all 3 screens)
-- `components/` — MomentumMeter, ScoreDial, ChatBubble, TurnTimeline
+- `app/api/negotiate/route.ts` — single POST endpoint (turn, debrief, drill handlers)
+- `app/page.tsx` — main SPA (all 6 screens)
+- `components/` — MomentumMeter, ScoreDial, ChatBubble, TurnTimeline, HistoryScreen (tabbed: Negotiations/Drills), ScoreTrend, StatsRow, PatternInsights, SessionCard, DrillPicker, DrillActive, DrillHistory
 
 ## Design DNA
 - Dark surface (#0a0a0c), amber/gold accent (#d4a843)
@@ -46,6 +54,7 @@ Single-page app with 3 state-driven screens (Setup → Negotiation → Debrief).
 - PII redaction on AI outputs
 - Error sanitization (no stack traces)
 - CSP headers in next.config.ts
+- Drill scenarios resolved server-side by scenarioId (no client-supplied prompt content)
 
 ## Commands
 ```bash

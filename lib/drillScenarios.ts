@@ -232,8 +232,8 @@ export const DRILL_SCENARIOS: DrillScenario[] = [
  * Get a random scenario for a given drill type, optionally excluding a scenario ID.
  */
 export function getRandomDrillScenario(type: DrillType, excludeId?: string): DrillScenario {
-  const candidates = DRILL_SCENARIOS.filter(
-    (s) => s.type === type && s.id !== excludeId
-  );
-  return candidates[Math.floor(Math.random() * candidates.length)];
+  const allOfType = DRILL_SCENARIOS.filter((s) => s.type === type);
+  const candidates = allOfType.filter((s) => s.id !== excludeId);
+  const pool = candidates.length > 0 ? candidates : allOfType;
+  return pool[Math.floor(Math.random() * pool.length)];
 }

@@ -10,6 +10,7 @@ import { parseResponse, parseDebriefResponse, parseDrillResponse } from "@/lib/p
 import { checkRateLimit, incrementRateLimit, checkRequestRateLimit, incrementRequestRateLimit } from "@/lib/rateLimit";
 import { validateInput, redactPII } from "@/lib/security";
 import { getStrategyById } from "@/lib/strategies";
+import { DRILL_SCENARIOS } from "@/lib/drillScenarios";
 
 const client = new Anthropic();
 
@@ -41,12 +42,8 @@ interface DebriefRequest {
 
 interface DrillRequest {
   type: "drill";
-  drillType: string;
-  scenarioContext: string;
-  opponentStatement: string;
+  scenarioId: string;
   userResponse: string;
-  gradingFocus: string[];
-  batna?: string;
 }
 
 type NegotiateRequest = TurnRequest | DebriefRequest | DrillRequest;
@@ -301,8 +298,6 @@ async function handleDebrief(body: DebriefRequest, ip: string) {
   });
 }
 
-const VALID_DRILL_TYPES = ["anchoring", "countering", "walking-away", "reframing"];
-
 async function handleDrill(body: DrillRequest, ip: string) {
   // Per-IP request rate limit
   const requestRateCheck = checkRequestRateLimit(ip);
@@ -313,10 +308,11 @@ async function handleDrill(body: DrillRequest, ip: string) {
     );
   }
 
-  // Validate drill type
-  if (!VALID_DRILL_TYPES.includes(body.drillType)) {
+  // Look up scenario server-side
+  const scenario = DRILL_SCENARIOS.find((s) => s.id === body.scenarioId);
+  if (!scenario) {
     return NextResponse.json(
-      { error: "Invalid drill type" },
+      { error: "Invalid scenario" },
       { status: 400 }
     );
   }
@@ -327,23 +323,15 @@ async function handleDrill(body: DrillRequest, ip: string) {
     return NextResponse.json({ error: responseCheck.reason }, { status: 400 });
   }
 
-  // Validate gradingFocus is an array of strings
-  if (!Array.isArray(body.gradingFocus) || body.gradingFocus.some((f) => typeof f !== "string")) {
-    return NextResponse.json(
-      { error: "Invalid grading focus" },
-      { status: 400 }
-    );
-  }
-
   incrementRequestRateLimit(ip);
 
   const systemPrompt = getDrillSystemPrompt(
-    body.drillType,
-    body.scenarioContext,
-    body.opponentStatement,
+    scenario.type,
+    scenario.context,
+    scenario.opponentStatement,
     body.userResponse,
-    body.gradingFocus,
-    body.batna
+    scenario.gradingFocus,
+    scenario.batna
   );
 
   const result = await client.messages.create({

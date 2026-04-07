@@ -35,6 +35,7 @@ export default function DrillActive({ drillType, onBack, onBackToDrills }: Drill
   const [isLoading, setIsLoading] = useState(false);
   const [debrief, setDebrief] = useState<DrillDebrief | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attemptKey, setAttemptKey] = useState(0);
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const debriefRef = useRef<HTMLDivElement>(null);
@@ -69,12 +70,8 @@ export default function DrillActive({ drillType, onBack, onBackToDrills }: Drill
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "drill",
-          drillType: scenario.type,
-          scenarioContext: scenario.context,
-          opponentStatement: scenario.opponentStatement,
+          scenarioId: scenario.id,
           userResponse: trimmed,
-          gradingFocus: scenario.gradingFocus,
-          batna: scenario.batna,
         }),
       });
 
@@ -125,6 +122,7 @@ export default function DrillActive({ drillType, onBack, onBackToDrills }: Drill
     setDebrief(null);
     setError(null);
     setIsLoading(false);
+    setAttemptKey(prev => prev + 1);
   };
 
   const scoreColor = (score: number) => {
@@ -148,6 +146,7 @@ export default function DrillActive({ drillType, onBack, onBackToDrills }: Drill
         </h2>
       </div>
 
+      <div key={attemptKey} className="space-y-6">
       {/* Scenario box */}
       <div className="bg-surface-raised border border-subtle rounded-lg p-4 space-y-3">
         <p className="text-xs font-mono text-muted tracking-wider uppercase">
@@ -274,6 +273,7 @@ export default function DrillActive({ drillType, onBack, onBackToDrills }: Drill
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
